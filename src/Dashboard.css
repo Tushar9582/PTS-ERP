@@ -1,0 +1,328 @@
+/* Dashboard.css */
+
+/* Container for the entire invoice card */
+.invoice-card {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  
+  /* Each box (white background with shadow) */
+  .whiteBox {
+    background-color: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+    padding: 16px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .whiteBox .header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+  }
+  
+  .whiteBox .divider {
+    margin: 10px 0;
+    height: 1px;
+    background-color: #f0f0f0;
+  }
+  
+  .whiteBox .content {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .whiteBox .row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 10px 0;
+  }
+  
+  .whiteBox .label {
+    font-size: 16px;
+    color: #555;
+  }
+  
+  .whiteBox .vertical-divider {
+    height: 30px;
+    border-left: 1px solid #f0f0f0;
+  }
+  
+  .whiteBox .value {
+    font-size: 16px;
+  }
+  
+  .whiteBox .tag {
+    font-size: 16px;
+    padding: 5px 10px;
+    border-radius: 8px;
+    font-weight: bold;
+    color: white;
+  }
+  
+  /* Specific colors for the tags */
+  .whiteBox .tag {
+    background-color: #1890ff;
+  }
+  
+  .whiteBox .tag[style*="background-color: #722ed1"] {
+    background-color: #722ed1;
+  }
+  
+  .whiteBox .tag[style*="background-color: #52c41a"] {
+    background-color: #52c41a;
+  }
+  
+  .whiteBox .tag[style*="background-color: #f5222d"] {
+    background-color: #f5222d;
+  }
+  
+  /* For the second section with Ant Design classes */
+  .ant-col {
+    padding: 0 15px;
+    margin-bottom: 20px;
+  }
+  
+  .ant-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+  
+  .whiteBox.box-height {
+    height: 100%;
+    margin-left: 300px;
+  }
+  
+  .whiteBox .ant-progress-outer {
+    background-color: #f0f0f0;
+    border-radius: 8px;
+  }
+  
+  .whiteBox .ant-progress-inner {
+    border-radius: 8px;
+    background-color: #722ed1;
+    height: 10px;
+  }
+  
+  .ant-progress-bg {
+    background-color: #722ed1;
+  }
+  
+  .invoice-title {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+  
+  .status-text {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  
+  .left {
+    font-size: 14px;
+    color: #555;
+  }
+  
+  .right {
+    font-size: 14px;
+    color: #999;
+  }
+  
+  .pad20 {
+    padding: 20px;
+  }
+  
+  /* Ensuring the layout for larger screens */
+  @media (min-width: 768px) {
+    .invoice-card {
+      flex-wrap: nowrap;
+      justify-content: space-between;
+      margin-left: 300px;
+    }
+  }
+  
+  @media (min-width: 992px) {
+    .whiteBox {
+      width: 48%; /* Two items per row */
+    }
+  }
+  
+  @media (min-width: 1200px) {
+    .whiteBox {
+      width: 23%; /* Four items per row */
+    }
+  }
+  
+  /* second css */
+
+ /* Container for second and third component */
+/* Container for second and third component */
+.seconddiv {
+    display: flex;
+    justify-content: space-between; /* Ensures equal space between the two components */
+    gap: 20px; /* Adds some space between the components */
+    flex-wrap: wrap; /* Allows wrapping on smaller screens */
+    margin-left: 300px;
+  }
+  
+  /* Style for the table (Second component) */
+  .invoice-table {
+    width: 65%; /* Increased width for the table */
+    border-collapse: collapse;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  .invoice-table th,
+  .invoice-table td {
+    padding: 12px 15px;
+    text-align: left;
+  }
+  
+  .invoice-table th {
+    font-weight: bold;
+    text-transform: uppercase;
+  }
+  
+  .invoice-table tbody tr:hover {
+    background-color: #f1f1f1;
+    transition: background-color 0.3s ease;
+  }
+  
+  .invoice-table td {
+    color: #555;
+  }
+  
+  .invoice-table td:first-child {
+    font-weight: bold;
+    color: #333;
+  }
+  
+  /* Style for the progress circle and statistics (Third component) */
+  .pad20 {
+    padding: 20px;
+    font-family: Arial, sans-serif;
+    flex: 0 0 30%; /* Reduce width of third component to 30% */
+  }
+  
+  /* Heading style for the third component */
+  .customers-heading {
+    color: rgb(34, 7, 94);
+    margin-bottom: 40px;
+    margin-top: 15px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-left: 110px;
+  }
+  
+  /* Styling for the progress container */
+  .progress-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+  
+  /* Styling for the progress circle */
+  .ant-progress-circle {
+    position: relative;
+    width: 148px;
+    height: 148px;
+    margin: 0 auto;
+  }
+  
+  .ant-progress-inner {
+    width: 100%;
+    height: 100%;
+    position: relative;
+  }
+  
+  .ant-progress-circle-svg {
+    width: 100%;
+    height: 100%;
+  }
+  
+  .ant-progress-circle-trail {
+    stroke: #f0f0f0;
+    stroke-width: 6;
+    fill: none;
+    stroke-linecap: round;
+  }
+  
+  .ant-progress-circle-path {
+    stroke: #e6f4ff;
+    stroke-width: 6;
+    fill: none;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.3s ease;
+  }
+  
+  .ant-progress-circle-path.active {
+    stroke: rgb(82, 196, 26);
+    opacity: 1;
+  }
+  
+  .ant-progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.5rem;
+    color: rgb(34, 7, 94);
+    font-weight: bold;
+  }
+  
+  /* Divider Style */
+  .ant-divider {
+    border-top: 1px solid #e8e8e8;
+    margin: 20px 0;
+  }
+  
+  .ant-statistic {
+    text-align: center;
+  }
+  
+  .ant-statistic-title {
+    font-size: 1rem;
+    color: #555;
+    margin-bottom: 8px;
+  }
+  
+  .ant-statistic-content {
+    font-size: 1.5rem;
+    color: #000;
+  }
+  
+  .ant-statistic-content-value-int {
+    font-weight: bold;
+  }
+  
+  .ant-statistic-content-value-decimal {
+    font-size: 1rem;
+  }
+  
+  .ant-statistic-content-suffix {
+    font-size: 1rem;
+    color: #555;
+  }
+  
+  /* Responsive Design for smaller screens */
+  @media (max-width: 768px) {
+    .seconddiv {
+      flex-direction: column; /* Stack components vertically on small screens */
+      gap: 20px; /* Maintain gap between the stacked components */
+    }
+  
+    .invoice-table,
+    .pad20 {
+      width: 100%; /* Full width on small screens */
+    }
+  }
+  
