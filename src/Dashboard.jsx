@@ -1,4 +1,5 @@
 import React from "react";
+import "@fontsource/lexend-deca"; // Defaults to 400 weight
 
 function Dashboard() {
   return (
@@ -25,7 +26,7 @@ function Dashboard() {
 
       {/* Total Sales */}
       <div style={styles.totalSalesCard}>
-        <h3>🏪 255</h3>
+        <h3>🏪 2552222</h3>
         <p>Total Sales</p>
       </div>
     </div>
