@@ -1,0 +1,18 @@
+.main-container {
+    display: flex;
+    justify-content: center; /* Center the content */
+    align-items: flex-start;
+    margin-left: 260px; /* Adjust to prevent sidebar overlap */
+    padding-top: 20px;
+    width: calc(100% - 260px); /* Ensure it doesn't take full width */
+  }
+  
+  .report-container {
+    width: 85%; /* Reduce width to keep it centered */
+    max-width: 1200px;
+  }
+  
+  .card {
+    border-radius: 10px;
+  }
+  

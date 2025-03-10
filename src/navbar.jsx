@@ -84,7 +84,7 @@ const Navbar = () => {
           </Link>
         </li>
         <li className={location.pathname === "/report" ? "active" : ""}>
-          <Link to="/report" className="nav-item">
+          <Link to="/reports" className="nav-item">
             <FaChartPie size={18} /> Report
           </Link>
         </li>
