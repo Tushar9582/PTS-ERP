@@ -22,6 +22,11 @@ const Navbar = () => {
             <FaTachometerAlt size={18} /> Dashboard
           </Link>
         </li>
+        <li className={location.pathname === "/leads" ? "active" : ""}>
+          <Link to="/leads" className="nav-item">
+            <FaClipboardList size={18} /> Leads
+          </Link>
+        </li>
         <li className={location.pathname === "/invoices" ? "active" : ""}>
           <Link to="/invoices" className="nav-item">
             <FaFileInvoiceDollar size={18} /> Invoices
@@ -52,11 +57,7 @@ const Navbar = () => {
             <FaBuilding size={18} /> Companies
           </Link>
         </li>
-        <li className={location.pathname === "/leads" ? "active" : ""}>
-          <Link to="/leads" className="nav-item">
-            <FaClipboardList size={18} /> Leads
-          </Link>
-        </li>
+      
         <li className={location.pathname === "/quotes-for-leads" ? "active" : ""}>
           <Link to="/quotes-for-leads" className="nav-item">
             <FaFileAlt size={18} /> Quotes For Leads
