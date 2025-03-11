@@ -1,55 +1,158 @@
-import React from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from 'react';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import { ref, push, onValue } from "firebase/database";
+import { db } from './firebase'; // Adjust the import path as necessary
 
 const Payments = () => {
-  const navigate = useNavigate();
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [payments, setPayments] = useState([]);
+  const [newPayment, setNewPayment] = useState({
+    number: '',
+    client: '',
+    amount: '',
+    date: '',
+    year: '',
+    paymentMode: ''
+  });
+
+  useEffect(() => {
+    const paymentsRef = ref(db, 'payments');
+    onValue(paymentsRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const paymentsList = Object.keys(data).map((key) => ({
+          id: key,
+          ...data[key],
+        }));
+        setPayments(paymentsList);
+      } else {
+        setPayments([]);
+      }
+    });
+  }, []);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewPayment({ ...newPayment, [name]: value });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const paymentsRef = ref(db, 'payments');
+    push(paymentsRef, newPayment)
+      .then(() => {
+        console.log("Payment saved to Firebase!");
+        setNewPayment({ number: '', client: '', amount: '', date: '', year: '', paymentMode: '' });
+        setIsFormOpen(false);
+      })
+      .catch((error) => {
+        console.error("Error saving payment: ", error);
+      });
+  };
 
   return (
-    <div style={{ padding: "20px", backgroundColor: "#f8f9fa", minHeight: "100vh", marginLeftLeft: "230px", }}>
-      <button 
-        style={{ marginBottom: "10px", cursor: "pointer", border: "none", background: "none", color: "#007bff", marginLeft: "260px",  }}
-        onClick={() => navigate(-1)}
-      >
-        ← Back
-      </button>
+    <div className="d-flex vh-100 bg-light" style={{ marginLeft: '200px' }}>
+      <main className="flex-grow-1 ms-5 p-4" style={{ marginLeft: "270px" }}>
+        <div className="bg-white p-4 shadow rounded">
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <h2 className="fs-3 fw-bold">Payments List</h2>
+            <div className="d-flex gap-2">
+              <input type="text" className="form-control" placeholder="Search..." style={{ width: "200px" }} />
+              <button className="btn btn-outline-secondary">Refresh</button>
+              <button className="btn btn-primary" onClick={() => setIsFormOpen(true)}>
+                Add New Payment
+              </button>
+            </div>
+          </div>
 
-      <h2>Payment List</h2>
-
-      <div style={{ backgroundColor: "white", padding: "20px", borderRadius: "10px",marginLeft: "230px", boxShadow: "0px 0px 10px rgba(0,0,0,0.1)" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}>
-          <input 
-            type="text" 
-            placeholder="Search"
-            style={{ padding: "5px", borderRadius: "5px", border: "1px solid #ddd", width: "200px" }}
-          />
-          <button style={{ padding: "5px 10px", backgroundColor: "#ddd", borderRadius: "5px", border: "none", cursor: "pointer" }}>
-            🔄 Refresh
-          </button>
+          <div className="table-responsive">
+            <table className="table table-bordered">
+              <thead className="table-light">
+                <tr>
+                  {["Number", "Client", "Amount", "Date", "Year", "Payment Mode"].map((heading) => (
+                    <th key={heading} className="text-center">{heading}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {payments.length > 0 ? (
+                  payments.map((payment) => (
+                    <tr key={payment.id}>
+                      <td className="text-center">{payment.number}</td>
+                      <td className="text-center">{payment.client}</td>
+                      <td className="text-center">{payment.amount}</td>
+                      <td className="text-center">{payment.date}</td>
+                      <td className="text-center">{payment.year}</td>
+                      <td className="text-center">{payment.paymentMode}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td className="text-center" colSpan="6">No data available</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
+      </main>
 
-        <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "10px" }}>
-          <thead>
-            <tr style={{ backgroundColor: "#f1f1f1" }}>
-              <th style={{ padding: "10px", border: "1px solid #ddd" }}>Number</th>
-              <th style={{ padding: "10px", border: "1px solid #ddd" }}>Client</th>
-              <th style={{ padding: "10px", border: "1px solid #ddd" }}>Amount</th>
-              <th style={{ padding: "10px", border: "1px solid #ddd" }}>Date</th>
-              <th style={{ padding: "10px", border: "1px solid #ddd" }}>Year</th>
-              <th style={{ padding: "10px", border: "1px solid #ddd" }}>Payment Mode</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td colSpan="6" style={{ padding: "20px", textAlign: "center", color: "#999" }}>
-                <div>
-                  <span style={{ fontSize: "40px" }}>📂</span>
-                  <br />
-                  No data
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <div
+        className={"position-fixed top-0 end-0 vh-100 bg-white shadow p-4 " + (isFormOpen ? "translate-0" : "translate-100")}
+        style={{
+          width: "350px",
+          marginRight: "20px",
+          transform: isFormOpen ? "translateX(0)" : "translateX(100%)",
+          transition: "transform 0.3s ease-in-out",
+        }}
+      >
+        <button className="btn-close position-absolute top-2 end-2" onClick={() => setIsFormOpen(false)}></button>
+        <h2 className="fs-3 fw-bold mb-3">Add New Payment</h2>
+
+        <form className="row g-3" onSubmit={handleSubmit}>
+          {[
+            { label: "Number", name: "number", type: "text" },
+            { label: "Client", name: "client", type: "text" },
+            { label: "Amount", name: "amount", type: "number" },
+            { label: "Date", name: "date", type: "date" },
+            { label: "Year", name: "year", type: "number" }
+          ].map(({ label, name, type }) => (
+            <div className="col-12" key={name}>
+              <label className="form-label">{label}</label>
+              <input
+                type={type}
+                className="form-control"
+                placeholder={`Enter ${label.toLowerCase()}`}
+                name={name}
+                value={newPayment[name]}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+          ))}
+
+          <div className="col-12">
+            <label className="form-label">Payment Mode</label>
+            <select
+              className="form-select"
+              name="paymentMode"
+              value={newPayment.paymentMode}
+              onChange={handleInputChange}
+              required
+            >
+              <option value="">Select Payment Mode</option>
+              <option value="Cash">Cash</option>
+              <option value="Credit Card">Credit Card</option>
+              <option value="Bank Transfer">Bank Transfer</option>
+            </select>
+          </div>
+
+          <div className="col-12">
+            <button type="submit" className="btn btn-primary w-100">
+              Submit
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
