@@ -1,40 +1,86 @@
-import React, { useState } from 'react';
-import 'bootstrap/dist/css/bootstrap.min.css'; // Import Bootstrap
+import React, { useState, useEffect } from "react";
+import "bootstrap/dist/css/bootstrap.min.css";
+import { db } from "./firebase"; // Import Firebase Realtime Database
+import Swal from "sweetalert2";
+import { ref, push, onValue, set } from "firebase/database";
 
 const Products = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [products, setProducts] = useState([]);
   const [newProduct, setNewProduct] = useState({
-    name: '',
-    category: '',
-    currency: 'us $ (US Dollar)',
-    price: '',
-    description: '',
-    ref: ''
+    name: "",
+    category: "",
+    currency: "us $ (US Dollar)",
+    price: "",
+    description: "",
+    ref: ""
   });
 
+  // Fetch products from Firebase on component mount
+  useEffect(() => {
+    const productsRef = ref(db, "products"); // Reference to 'products' collection
+    onValue(productsRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        const productList = Object.keys(data).map((key) => ({
+          id: key,
+          ...data[key]
+        }));
+        setProducts(productList);
+      } else {
+        setProducts([]);
+      }
+    });
+  }, []);
+
+  // Handle input change
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setNewProduct({ ...newProduct, [name]: value });
   };
 
+  // Handle form submission to add a new product
   const handleSubmit = (e) => {
     e.preventDefault();
-    setProducts([...products, newProduct]);
-    setNewProduct({
-      name: '',
-      category: '',
-      currency: 'us $ (US Dollar)',
-      price: '',
-      description: '',
-      ref: ''
-    });
-    setIsFormOpen(false);
+  
+    // Generate a unique ID for the new product
+    const newProductRef = push(ref(db, "products"));
+  
+    // Save product data to Firebase
+    set(newProductRef, newProduct)
+      .then(() => {
+        Swal.fire({
+          title: "Success!",
+          text: "Product added successfully!",
+          icon: "success",
+          confirmButtonText: "OK",
+        });
+  
+        // Reset form fields
+        setNewProduct({
+          name: "",
+          category: "",
+          currency: "us $ (US Dollar)",
+          price: "",
+          description: "",
+          ref: ""
+        });
+        setIsFormOpen(false);
+      })
+      .catch((error) => {
+        Swal.fire({
+          title: "Error!",
+          text: "Failed to add product. Please try again.",
+          icon: "error",
+          confirmButtonText: "OK",
+        });
+        console.error("Error adding product:", error);
+      });
   };
+  
 
   return (
-    <div className="d-flex vh-100 bg-light" style={{ marginLeft: '200px' }}>
-      {/* Main Content */}
+    <div className="d-flex vh-100 bg-light" style={{ marginLeft: "200px" }}>
       <main className="flex-grow-1 ms-5 p-4" style={{ marginLeft: "270px" }}>
         <div className="bg-white p-4 shadow rounded">
           <div className="d-flex justify-content-between align-items-center mb-3">
@@ -154,31 +200,33 @@ const Products = () => {
               required
             />
           </div>
+          {/* Description Field */}
+<div className="col-12">
+  <label className="form-label">Description</label>
+  <textarea
+    className="form-control"
+    placeholder="Enter description"
+    name="description"
+    value={newProduct.description}
+    onChange={handleInputChange}
+    required
+  ></textarea>
+</div>
 
-          <div className="col-12">
-            <label className="form-label">Description</label>
-            <textarea
-              className="form-control"
-              placeholder="Enter description"
-              name="description"
-              value={newProduct.description}
-              onChange={handleInputChange}
-              required
-            />
-          </div>
+{/* Ref Field */}
+<div className="col-12">
+  <label className="form-label">Ref</label>
+  <input
+    type="text"
+    className="form-control"
+    placeholder="Enter reference"
+    name="ref"
+    value={newProduct.ref}
+    onChange={handleInputChange}
+    required
+  />
+</div>
 
-          <div className="col-12">
-            <label className="form-label">Ref</label>
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Enter ref"
-              name="ref"
-              value={newProduct.ref}
-              onChange={handleInputChange}
-              required
-            />
-          </div>
 
           <div className="col-12">
             <button type="submit" className="btn btn-primary w-100">
