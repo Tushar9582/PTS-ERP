@@ -37,52 +37,28 @@ const Navbar = () => {
             <FaMoneyBillWave size={18} /> Payments
           </Link>
         </li>
-        <li className={location.pathname === "/quotes-for-customers" ? "active" : ""}>
-          <Link to="/quotes-for-customers" className="nav-item">
-            <FaQuoteRight size={18} /> Quotes For Customers
-          </Link>
-        </li>
-        <li className={location.pathname === "/customers" ? "active" : ""}>
-          <Link to="/customers" className="nav-item">
-            <FaUser size={18} /> Customers
-          </Link>
-        </li>
-        <li className={location.pathname === "/peoples" ? "active" : ""}>
-          <Link to="/peoples" className="nav-item">
-            <FaUser size={18} /> Peoples
-          </Link>
-        </li>
+     
+       
+      
         <li className={location.pathname === "/companies" ? "active" : ""}>
           <Link to="/companies" className="nav-item">
             <FaBuilding size={18} /> Companies
           </Link>
         </li>
       
-        <li className={location.pathname === "/quotes-for-leads" ? "active" : ""}>
-          <Link to="/quotes-for-leads" className="nav-item">
-            <FaFileAlt size={18} /> Quotes For Leads
-          </Link>
-        </li>
+       
         <li className={location.pathname === "/products" ? "active" : ""}>
           <Link to="/products" className="nav-item">
             <FaBox size={18} /> Products
           </Link>
         </li>
         <li className={location.pathname === "/products-category" ? "active" : ""}>
-          <Link to="/products-category" className="nav-item">
+          <Link to="/Products-Category" className="nav-item">
             <FaTags size={18} /> Products Category
           </Link>
         </li>
-        <li className={location.pathname === "/expenses" ? "active" : ""}>
-          <Link to="/expenses" className="nav-item">
-            <FaFileInvoice size={18} /> Expenses
-          </Link>
-        </li>
-        <li className={location.pathname === "/expenses-category" ? "active" : ""}>
-          <Link to="/expenses-category" className="nav-item">
-            <FaThList size={18} /> Expenses Category
-          </Link>
-        </li>
+       
+        
         <li className={location.pathname === "/report" ? "active" : ""}>
           <Link to="/reports" className="nav-item">
             <FaChartPie size={18} /> Report
