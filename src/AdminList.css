@@ -1,0 +1,33 @@
+.admin-container {
+    margin-left: 250px; /* Adjust based on sidebar width */
+    padding: 20px;
+    width: calc(100% - 250px); /* Ensure it takes remaining space */
+  }
+  .admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+  }
+  
+  .admin-actions {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .search-input {
+    width: 200px;
+  }
+  
+  .refresh-btn,
+  .add-admin-btn {
+    font-weight: bold;
+  }
+  
+  @media (max-width: 768px) {
+    .admin-container {
+      margin-left: 0;
+      width: 100%;
+    }
+  }
+  

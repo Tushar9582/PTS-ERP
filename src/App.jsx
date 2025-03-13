@@ -1,5 +1,9 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { auth } from "./firebase";
 import Navbar from "./navbar";
+import Login from "./Login";
 import Dashboard from "./Dashboard";
 import Invoices from "./Invoices";
 import Payments from "./Payments";
@@ -17,30 +21,56 @@ import Reports from "./Reports";
 import Settings from "./Settings";
 
 function App() {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   return (
     <Router>
-      <div style={{ display: "flex" }}>
-        <Navbar /> {/* Sidebar Component */}
-        <div style={{ flexGrow: 1, padding: "20px" }}>
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/invoices" element={<Invoices />} />
-            <Route path="/payments" element={<Payments />} />
-            <Route path="/quotes-for-customers" element={<QuotesForCustomers />} />
-            <Route path="/customers" element={<Customers />} />
-            <Route path="/peoples" element={<Peoples />} />
-            <Route path="/companies" element={<Companies />} />
-            <Route path="/leads" element={<Leads />} />
-            <Route path="/quotes-for-leads" element={<QuotesForLeads />} />
-            <Route path="/products" element={<Products />} />
-            <Route path="/Products-Category" element={<ProductsCategory />} />
-            <Route path="/expenses" element={<Expenses />} />
-            <Route path="/expenses-category" element={<ExpensesCategory />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/settings" element={<Settings />} />
-          </Routes>
-        </div>
-      </div>
+      <Routes>
+        <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
+
+        {user ? (
+          <Route
+            path="/*"
+            element={
+              <div style={{ display: "flex" }}>
+                <Navbar />
+                <div style={{ flexGrow: 1, padding: "20px" }}>
+                  <Routes>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/invoices" element={<Invoices />} />
+                    <Route path="/payments" element={<Payments />} />
+                    <Route path="/quotes-for-customers" element={<QuotesForCustomers />} />
+                    <Route path="/customers" element={<Customers />} />
+                    <Route path="/peoples" element={<Peoples />} />
+                    <Route path="/companies" element={<Companies />} />
+                    <Route path="/leads" element={<Leads />} />
+                    <Route path="/quotes-for-leads" element={<QuotesForLeads />} />
+                    <Route path="/products" element={<Products />} />
+                    <Route path="/Products-Category" element={<ProductsCategory />} />
+                    <Route path="/expenses" element={<Expenses />} />
+                    <Route path="/expenses-category" element={<ExpensesCategory />} />
+                    <Route path="/reports" element={<Reports />} />
+                    <Route
+                      path="/settings"
+                      element={<Settings logout={signOut} />}
+                    />
+                  </Routes>
+                </div>
+              </div>
+            }
+          />
+        ) : (
+          <Route path="/*" element={<Navigate to="/login" />} />
+        )}
+      </Routes>
     </Router>
   );
 }

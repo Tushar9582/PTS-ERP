@@ -17,6 +17,7 @@
     "antd": "^5.24.3",
     "bootstrap": "^5.3.3",
     "firebase": "^11.4.0",
+    "mdb-react-ui-kit": "^9.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-icons": "^5.5.0",
