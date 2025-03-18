@@ -57,7 +57,7 @@ const Payments = () => {
           <div className="d-flex justify-content-between align-items-center mb-3">
             <h2 className="fs-3 fw-bold">Payments List</h2>
             <div className="d-flex gap-2">
-              <input type="text" className="form-control" placeholder="Search..." style={{ width: "200px" }} />
+              <input type="text" className="form-control2 " placeholder="Search..." style={{ width: "200px"}} />
               <button className="btn btn-outline-secondary">Refresh</button>
               <button className="btn btn-primary" onClick={() => setIsFormOpen(true)}>
                 Add New Payment
@@ -127,6 +127,7 @@ const Payments = () => {
                 value={newPayment[name]}
                 onChange={handleInputChange}
                 required
+                style={{border:'1px solid black'}}
               />
             </div>
           ))}

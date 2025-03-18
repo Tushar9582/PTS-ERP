@@ -86,7 +86,7 @@ const Products = () => {
           <div className="d-flex justify-content-between align-items-center mb-3">
             <h2 className="fs-3 fw-bold">Product List</h2>
             <div className="d-flex gap-2">
-              <input type="text" className="form-control" placeholder="Search..." style={{ width: "200px" }} />
+              <input type="text" className="form-control2" placeholder="Search..." style={{ width: "200px" }} />
               <button className="btn btn-outline-secondary">Refresh</button>
               <button className="btn btn-primary" onClick={() => setIsFormOpen(true)}>
                 Add New Product
@@ -154,6 +154,7 @@ const Products = () => {
               value={newProduct.name}
               onChange={handleInputChange}
               required
+              style={{border:'1px solid black'}}
             />
           </div>
 
@@ -165,6 +166,7 @@ const Products = () => {
               value={newProduct.category}
               onChange={handleInputChange}
               required
+              style={{border:'1px solid black'}}
             >
               <option value="">Select</option>
               <option value="Category 1">Category 1</option>
@@ -181,6 +183,7 @@ const Products = () => {
               value={newProduct.currency}
               onChange={handleInputChange}
               required
+              style={{border:'1px solid black'}}
             >
               <option value="us $ (US Dollar)">us $ (US Dollar)</option>
               <option value="€ (Euro)">€ (Euro)</option>
@@ -198,6 +201,7 @@ const Products = () => {
               value={newProduct.price}
               onChange={handleInputChange}
               required
+              style={{border:'1px solid black'}}
             />
           </div>
           {/* Description Field */}
@@ -210,6 +214,7 @@ const Products = () => {
     value={newProduct.description}
     onChange={handleInputChange}
     required
+    style={{border:'1px solid black'}}
   ></textarea>
 </div>
 
@@ -224,6 +229,7 @@ const Products = () => {
     value={newProduct.ref}
     onChange={handleInputChange}
     required
+    style={{border:'1px solid black'}}
   />
 </div>
 

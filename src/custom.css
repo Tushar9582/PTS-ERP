@@ -1,0 +1,39 @@
+.custom-form-container {
+    position: fixed; /* Keep it fixed in place */
+    top: 0;
+    right: 0;
+    width: 350px; /* Adjust width as needed */
+    height: 100vh; /* Full height */
+    background: white;
+    padding: 20px;
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.2);
+    overflow-y: auto; /* Enable scrolling */
+    display: flex;
+    flex-direction: column;
+}
+
+/* Make sure form content does not stretch the container */
+.form-scroll-container {
+    flex-grow: 1;
+    overflow-y: auto;
+    max-height: 70vh; /* Adjust to fit screen */
+}
+
+/* Style the scrollbar */
+.form-scroll-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.form-scroll-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.form-scroll-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+}
+
+.form-scroll-container::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
