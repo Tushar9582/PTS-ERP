@@ -19,6 +19,7 @@ import Expenses from "./Expenses";
 import ExpensesCategory from "./ExpensesCategory";
 import Reports from "./Reports";
 import Settings from "./Settings";
+import CustomForm from "./CustomForm";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -58,6 +59,7 @@ function App() {
                     <Route path="/expenses" element={<Expenses />} />
                     <Route path="/expenses-category" element={<ExpensesCategory />} />
                     <Route path="/reports" element={<Reports />} />
+                    <Route path="customform" element={<CustomForm/>} />
                     <Route
                       path="/settings"
                       element={<Settings logout={signOut} />}

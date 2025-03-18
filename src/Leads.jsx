@@ -3,7 +3,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { db } from "./firebase";
 import { ref, push, onValue } from "firebase/database";
 import Swal from "sweetalert2";
-import CustomForm from "./CustomForm"; // Import CustomForm Component
+
 
 const Leads = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -182,24 +182,8 @@ const Leads = () => {
         </div>
       )}
 
-      {/* Custom Form */}
-      {isCustomFormOpen && (
-        <div
-          className="position-fixed top-0 end-0 vh-100 bg-white shadow p-4"
-          style={{
-            width: "350px",
-            marginRight: "20px",
-            transform: "translateX(0)",
-            transition: "transform 0.3s ease-in-out",
-          }}
-        >
-          <button
-            className="btn-close position-absolute top-2 end-2"
-            onClick={() => setIsCustomFormOpen(false)}
-          ></button>
-          <CustomForm onClose={() => setIsCustomFormOpen(false)} />
-        </div>
-      )}
+     
+     
     </div>
   );
 };

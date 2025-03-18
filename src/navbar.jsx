@@ -69,6 +69,11 @@ const Navbar = () => {
               <FaCog size={18} /> Settings
             </Link>
           </li>
+          <li className={location.pathname === "/customform" ? "active" : ""}>
+            <Link to="/customform" className="nav-item">
+              <FaCog size={18} /> Custom Form 
+            </Link>
+          </li>
         </ul>
       </div>
     </>
