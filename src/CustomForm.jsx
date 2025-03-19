@@ -5,14 +5,15 @@ import Swal from "sweetalert2";
 import "./custom.css";
 
 const availableFields = [
-  { name: "name", label: "Name", type: "text" },
-  { name: "phone", label: "Phone", type: "tel" },
-  { name: "email", label: "Email", type: "email" },
-  { name: "address", label: "Address", type: "text" },
-  { name: "pincode", label: "Pincode", type: "text" },
-  { name: "city", label: "City", type: "text" },
-  { name: "id", label: "ID", type: "text" },
-  { name: "leadstatus", label: "Lead Status", type: "dropdown", options: ["On Process", "Complete", "Cancelled"] }
+  { name: "name", label: "Name", type: "text", icon: "user" },
+  { name: "phone", label: "Phone", type: "tel", icon: "phone" },
+  { name: "email", label: "Email", type: "email", icon: "envelope" },
+  { name: "address", label: "Address", type: "text", icon: "map-marker" },
+  { name: "pincode", label: "Pincode", type: "text", icon: "map-pin" },
+  { name: "city", label: "City", type: "text", icon: "building" },
+  { name: "id", label: "ID", type: "text", icon: "id-card" },
+  { name: "leadstatus", label: "Lead Status", type: "dropdown", 
+    options: ["On Process", "Complete", "Cancelled"], icon: "chart-line" }
 ];
 
 const CustomForm = () => {
@@ -74,20 +75,28 @@ const CustomForm = () => {
 
   return (
     <div className="content-container">
-      {/* Left Side - Form */}
+      {/* Left Side - Enhanced Form */}
       <div className="form-container">
-        <h2 className="fs-4 fw-bold mb-3">Custom Form</h2>
-        <div className="mb-3">
-          <label className="form-label">Add Fields</label>
+        <h2 className="form-title">
+          <i className="fas fa-pencil-alt me-2"></i>
+          Custom Lead Form
+        </h2>
+        
+        <div className="mb-4">
+          <label className="form-section-label">
+            <i className="fas fa-plus-circle me-2"></i>
+            Add Fields
+          </label>
           <div className="d-flex flex-wrap gap-2">
             {availableFields.map((field) => (
               <button
                 key={field.name}
-                className="btn btn-outline-primary btn-sm"
+                className="btn btn-add-field"
                 onClick={() => handleAddField(field)}
                 type="button"
               >
-                {field.label} +
+                <i className={`fas fa-${field.icon} me-2`}></i>
+                {field.label}
               </button>
             ))}
           </div>
@@ -97,13 +106,16 @@ const CustomForm = () => {
           <form onSubmit={handleSubmit} className="form-content">
             <div className="form-group">
               {selectedFields.map((field, index) => (
-                <div key={field.name} className="field-container" style={{ order: index }}>
-                  <label className="form-label">{field.label}</label>
+                <div key={field.name} className="field-container">
+                  <label className="input-label">
+                    <i className={`fas fa-${field.icon} me-2`}></i>
+                    {field.label}
+                  </label>
                   <div className="input-group">
                     {field.type === "dropdown" ? (
                       <select
                         name={field.name}
-                        className="form-control"
+                        className="form-input"
                         onChange={handleChange}
                         required
                       >
@@ -115,17 +127,17 @@ const CustomForm = () => {
                       <input
                         type={field.type}
                         name={field.name}
-                        className="form-control"
+                        className="form-input"
                         onChange={handleChange}
                         required
                       />
                     )}
                     <button
                       type="button"
-                      className="btn btn-danger btn-sm remove-btn"
+                      className="btn-remove-field"
                       onClick={() => handleRemoveField(field.name)}
                     >
-                      ❌
+                      <i className="fas fa-trash-alt"></i>
                     </button>
                   </div>
                 </div>
@@ -133,8 +145,9 @@ const CustomForm = () => {
             </div>
 
             {selectedFields.length > 0 && (
-              <button type="submit" className="btn btn-success w-100 mt-3">
-                Submit
+              <button type="submit" className="btn-submit">
+                <i className="fas fa-paper-plane me-2"></i>
+                Submit Lead
               </button>
             )}
           </form>

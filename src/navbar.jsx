@@ -34,9 +34,27 @@ const Navbar = () => {
               <FaClipboardList size={18} /> Leads
             </Link>
           </li>
+
+          <li className={location.pathname === "/customform" ? "active" : ""}>
+            <Link to="/customform" className="nav-item">
+              <FaCog size={18} /> Custom Leads 
+            </Link>
+          </li>
+          
+          
           <li className={location.pathname === "/invoices" ? "active" : ""}>
             <Link to="/invoices" className="nav-item">
               <FaFileInvoiceDollar size={18} /> Invoices
+            </Link>
+          </li>
+          <li className={location.pathname === "/customers" ? "active" : ""}>
+            <Link to="/customers" className="nav-item">
+              <FaCog size={18} />customers 
+            </Link>
+          </li>
+          <li className={location.pathname === "/peoples" ? "active" : ""}>
+            <Link to="/peoples" className="nav-item">
+              <FaCog size={18} />Peoples 
             </Link>
           </li>
           <li className={location.pathname === "/payments" ? "active" : ""}>
@@ -69,11 +87,7 @@ const Navbar = () => {
               <FaCog size={18} /> Settings
             </Link>
           </li>
-          <li className={location.pathname === "/customform" ? "active" : ""}>
-            <Link to="/customform" className="nav-item">
-              <FaCog size={18} /> Custom Form 
-            </Link>
-          </li>
+        
         </ul>
       </div>
     </>
