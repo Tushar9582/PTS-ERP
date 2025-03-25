@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { ref, push, set } from "firebase/database";
+import React, { useState, useEffect } from "react";
+import { ref, push, set, get } from "firebase/database";
 import { db } from "./firebase";
 import Swal from "sweetalert2";
 import "./NewInvoiceForm.css";
@@ -7,13 +7,36 @@ import "./NewInvoiceForm.css";
 const NewInvoiceForm = ({ onSave, onClose, customers = [] }) => {
   const [invoice, setInvoice] = useState({
     number: "",
-    clientId: "", // Ensure we use clientId, not client
+    clientId: "",
     date: "",
     expireDate: "",
     total: "",
     status: "Draft",
     createdBy: "",
+    productId: "", // New field for product selection
   });
+
+  const [products, setProducts] = useState([]);
+
+  // Fetch Products from Firebase
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const snapshot = await get(ref(db, "products"));
+        if (snapshot.exists()) {
+          const productData = snapshot.val();
+          const productList = Object.keys(productData).map((key) => ({
+            id: key,
+            name: productData[key].name,
+          }));
+          setProducts(productList);
+        }
+      } catch (error) {
+        console.error("Error fetching products:", error);
+      }
+    };
+    fetchProducts();
+  }, []);
 
   const handleChange = (e) => {
     setInvoice({ ...invoice, [e.target.name]: e.target.value });
@@ -22,24 +45,23 @@ const NewInvoiceForm = ({ onSave, onClose, customers = [] }) => {
   const handleSave = () => {
     if (
       !invoice.number.trim() ||
-      !invoice.clientId.trim() || // Fixed: Use clientId instead of client
+      !invoice.clientId.trim() ||
       !invoice.date.trim() ||
       !invoice.expireDate.trim() ||
       !invoice.total.trim() ||
-      !invoice.createdBy.trim()
+      !invoice.createdBy.trim() ||
+      !invoice.productId.trim() // Ensure product is selected
     ) {
       Swal.fire("Error!", "All fields are required!", "error");
       return;
     }
 
-    // Convert total to a number if necessary
     const totalValue = parseFloat(invoice.total);
     if (isNaN(totalValue) || totalValue <= 0) {
       Swal.fire("Error!", "Total must be a valid number!", "error");
       return;
     }
 
-    // Ensure date format is valid (YYYY-MM-DD)
     const validDatePattern = /^\d{4}-\d{2}-\d{2}$/;
     if (!validDatePattern.test(invoice.date) || !validDatePattern.test(invoice.expireDate)) {
       Swal.fire("Error!", "Invalid date format. Please use YYYY-MM-DD.", "error");
@@ -73,11 +95,25 @@ const NewInvoiceForm = ({ onSave, onClose, customers = [] }) => {
           {customers.length > 0 ? (
             customers.map((customer) => (
               <option key={customer.value} value={customer.value}>
-                {customer.label || "Unnamed Client"} {/* Fixed: Correctly mapping name */}
+                {customer.label || "Unnamed Client"}
               </option>
             ))
           ) : (
             <option disabled>No clients available</option>
+          )}
+        </select>
+
+        <label>Product *</label>
+        <select name="productId" value={invoice.productId} onChange={handleChange}>
+          <option value="">Select Product</option>
+          {products.length > 0 ? (
+            products.map((product) => (
+              <option key={product.id} value={product.id}>
+                {product.name}
+              </option>
+            ))
+          ) : (
+            <option disabled>No products available</option>
           )}
         </select>
 

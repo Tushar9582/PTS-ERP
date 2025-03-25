@@ -12,6 +12,8 @@ const InvoiceList = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [customers, setCustomers] = useState({}); // Store customers as an object (id -> name)
   const [customerOptions, setCustomerOptions] = useState([]); // For dropdown options
+  const [products, setProducts] = useState({}); // Store products as an object (id -> name)
+  const [productOptions, setProductOptions] = useState([]); // For dropdown options
 
   // Fetch customers from Firebase
   useEffect(() => {
@@ -33,6 +35,25 @@ const InvoiceList = () => {
     });
   }, []);
 
+  // Fetch products from Firebase
+  useEffect(() => {
+    const productsRef = ref(db, "products");
+    onValue(productsRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        setProducts(data);
+        const options = Object.keys(data).map((id) => ({
+          value: id,
+          label: data[id].name || "Unknown Product",
+        }));
+        setProductOptions(options);
+      } else {
+        setProducts({});
+        setProductOptions([]);
+      }
+    });
+  }, []);
+
   // Fetch invoices from Firebase
   useEffect(() => {
     const invoicesRef = ref(db, "invoices");
@@ -43,6 +64,8 @@ const InvoiceList = () => {
           id: key,
           clientId: data[key].clientId || "Unknown", // Store clientId
           client: customers[data[key].clientId]?.name || "Unknown Client", // Fetch correct customer name
+          productId: data[key].productId || "Unknown", // Store productId
+          product: products[data[key].productId]?.name || "Unknown Product", // Fetch correct product name
           ...data[key],
         }));
         setInvoices(invoiceList);
@@ -52,7 +75,7 @@ const InvoiceList = () => {
         setFilteredInvoices([]);
       }
     });
-  }, [customers]); // Re-run when customers change
+  }, [customers, products]); // Re-run when customers or products change
 
   // Handle search functionality
   const handleSearch = (e) => {
@@ -62,7 +85,7 @@ const InvoiceList = () => {
       setFilteredInvoices(invoices);
     } else {
       const filtered = invoices.filter(
-        (invoice) => invoice.client.toLowerCase().includes(value)
+        (invoice) => invoice.client.toLowerCase().includes(value) || invoice.product.toLowerCase().includes(value)
       );
       setFilteredInvoices(filtered);
     }
@@ -79,6 +102,7 @@ const InvoiceList = () => {
   const columns = [
     { title: "Number", dataIndex: "number", key: "number" },
     { title: "Client", dataIndex: "client", key: "client" },
+    { title: "Product", dataIndex: "product", key: "product" },
     { title: "Date", dataIndex: "date", key: "date" },
     { title: "Expire Date", dataIndex: "expireDate", key: "expireDate" },
     { title: "Total", dataIndex: "total", key: "total" },
@@ -92,9 +116,9 @@ const InvoiceList = () => {
         <h2>Invoice List</h2>
         <div style={{ display: "flex", gap: "8px" }}>
           <Input
-            placeholder="Search by Client"
+            placeholder="Search by Client or Product"
             allowClear
-            style={{ width: 200 }}
+            style={{ width: 250 }}
             prefix={<SearchOutlined />}
             value={searchText}
             onChange={handleSearch}
@@ -106,7 +130,7 @@ const InvoiceList = () => {
       <Table columns={columns} dataSource={filteredInvoices} rowKey="id" locale={{ emptyText: "No data" }} />
 
       <Modal title="New Invoice" open={isModalOpen} onCancel={handleClose} footer={null} width={800}>
-        <NewInvoiceForm onSave={() => {}} onClose={handleClose} customers={customerOptions} />
+        <NewInvoiceForm onSave={() => {}} onClose={handleClose} customers={customerOptions} products={productOptions} />
       </Modal>
     </div>
   );
