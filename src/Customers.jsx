@@ -4,7 +4,7 @@ import { db } from "./firebase";
 import { ref, push, onValue } from "firebase/database";
 import Swal from "sweetalert2";
 
-const Customers = () => {
+const Customers = ({ onSelectCustomer }) => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [customers, setCustomers] = useState([]);
   const [formData, setFormData] = useState({
@@ -37,9 +37,17 @@ const Customers = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Prevent empty name submission
+    if (!formData.name.trim()) {
+      Swal.fire("Error!", "Customer name is required!", "error");
+      return;
+    }
+
     try {
       await push(ref(db, "customers"), formData);
       Swal.fire("Success!", "Customer added successfully!", "success");
+      setFormData({ name: "", email: "", phone: "", address: "", company: "" });
       setIsFormOpen(false);
     } catch (error) {
       Swal.fire("Error!", "Failed to add customer.", "error");
@@ -77,12 +85,16 @@ const Customers = () => {
               <tbody>
                 {customers.length > 0 ? (
                   customers.map((customer) => (
-                    <tr key={customer.id}>
-                      <td className="text-center">{customer.name}</td>
-                      <td className="text-center">{customer.email}</td>
-                      <td className="text-center">{customer.phone}</td>
-                      <td className="text-center">{customer.address}</td>
-                      <td className="text-center">{customer.company}</td>
+                    <tr
+                      key={customer.id}
+                      onClick={() => onSelectCustomer(customer)}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <td className="text-center">{customer.name || "No Name"}</td>
+                      <td className="text-center">{customer.email || "N/A"}</td>
+                      <td className="text-center">{customer.phone || "N/A"}</td>
+                      <td className="text-center">{customer.address || "N/A"}</td>
+                      <td className="text-center">{customer.company || "N/A"}</td>
                     </tr>
                   ))
                 ) : (
@@ -123,6 +135,7 @@ const Customers = () => {
                   type={type}
                   name={name}
                   className="form-control"
+                  value={formData[name]} // Controlled input
                   onChange={handleChange}
                   required
                   style={{ border: "1px solid black" }}

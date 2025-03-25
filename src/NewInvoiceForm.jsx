@@ -1,13 +1,13 @@
 import React, { useState } from "react";
 import { ref, push, set } from "firebase/database";
-import { db } from "./firebase"; // Ensure this path is correct
+import { db } from "./firebase";
 import Swal from "sweetalert2";
 import "./NewInvoiceForm.css";
 
-const NewInvoiceForm = ({ onSave, onClose }) => {
+const NewInvoiceForm = ({ onSave, onClose, customers = [] }) => {
   const [invoice, setInvoice] = useState({
     number: "",
-    client: "",
+    clientId: "", // Ensure we use clientId, not client
     date: "",
     expireDate: "",
     total: "",
@@ -20,10 +20,9 @@ const NewInvoiceForm = ({ onSave, onClose }) => {
   };
 
   const handleSave = () => {
-    // Validate all fields
     if (
       !invoice.number.trim() ||
-      !invoice.client.trim() ||
+      !invoice.clientId.trim() || // Fixed: Use clientId instead of client
       !invoice.date.trim() ||
       !invoice.expireDate.trim() ||
       !invoice.total.trim() ||
@@ -52,8 +51,8 @@ const NewInvoiceForm = ({ onSave, onClose }) => {
     set(newInvoiceRef, { ...invoice, total: totalValue })
       .then(() => {
         Swal.fire("Success!", "Invoice added successfully!", "success");
-        onSave(); // Fetch updated data after saving
-        onClose(); // Close modal after saving
+        onSave();
+        onClose();
       })
       .catch((error) => {
         Swal.fire("Error!", "Failed to add invoice. Try again.", "error");
@@ -69,7 +68,18 @@ const NewInvoiceForm = ({ onSave, onClose }) => {
         <input type="text" name="number" value={invoice.number} onChange={handleChange} />
 
         <label>Client *</label>
-        <input type="text" name="client" value={invoice.client} onChange={handleChange} />
+        <select name="clientId" value={invoice.clientId} onChange={handleChange}>
+          <option value="">Select Client</option>
+          {customers.length > 0 ? (
+            customers.map((customer) => (
+              <option key={customer.value} value={customer.value}>
+                {customer.label || "Unnamed Client"} {/* Fixed: Correctly mapping name */}
+              </option>
+            ))
+          ) : (
+            <option disabled>No clients available</option>
+          )}
+        </select>
 
         <label>Date *</label>
         <input type="date" name="date" value={invoice.date} onChange={handleChange} />

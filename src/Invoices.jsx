@@ -1,50 +1,68 @@
 import React, { useState, useEffect } from "react";
-import { Table, Button, Modal, Input } from "antd";
+import { Table, Button, Modal, Input, Select } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import NewInvoiceForm from "./NewInvoiceForm";
 import { ref, onValue } from "firebase/database";
-import { db } from './firebase'; // Ensure the correct import path
+import { db } from "./firebase"; // Ensure the correct import path
 
 const InvoiceList = () => {
   const [invoices, setInvoices] = useState([]);
-  const [filteredInvoices, setFilteredInvoices] = useState([]); // New state for search results
-  const [searchText, setSearchText] = useState(""); // Search input state
+  const [filteredInvoices, setFilteredInvoices] = useState([]);
+  const [searchText, setSearchText] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [customers, setCustomers] = useState({}); // Store customers as an object (id -> name)
+  const [customerOptions, setCustomerOptions] = useState([]); // For dropdown options
 
-  // Function to fetch invoices
-  const fetchInvoices = () => {
+  // Fetch customers from Firebase
+  useEffect(() => {
+    const customersRef = ref(db, "customers");
+    onValue(customersRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        setCustomers(data);
+        // Convert to dropdown options
+        const options = Object.keys(data).map((id) => ({
+          value: id, // clientId
+          label: data[id].name || "Unknown Customer",
+        }));
+        setCustomerOptions(options);
+      } else {
+        setCustomers({});
+        setCustomerOptions([]);
+      }
+    });
+  }, []);
+
+  // Fetch invoices from Firebase
+  useEffect(() => {
     const invoicesRef = ref(db, "invoices");
     onValue(invoicesRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
         const invoiceList = Object.keys(data).map((key) => ({
           id: key,
+          clientId: data[key].clientId || "Unknown", // Store clientId
+          client: customers[data[key].clientId]?.name || "Unknown Client", // Fetch correct customer name
           ...data[key],
         }));
         setInvoices(invoiceList);
-        setFilteredInvoices(invoiceList); // Initialize filtered invoices
+        setFilteredInvoices(invoiceList);
       } else {
         setInvoices([]);
         setFilteredInvoices([]);
       }
     });
-  };
+  }, [customers]); // Re-run when customers change
 
-  // Fetch invoices on component mount
-  useEffect(() => {
-    fetchInvoices();
-  }, []);
-
-  // Function to handle search
+  // Handle search functionality
   const handleSearch = (e) => {
-    const value = e.target.value.toLowerCase(); // Convert input to lowercase for case-insensitive search
+    const value = e.target.value.toLowerCase();
     setSearchText(value);
-
     if (value === "") {
-      setFilteredInvoices(invoices); // Reset to full list when input is cleared
+      setFilteredInvoices(invoices);
     } else {
-      const filtered = invoices.filter((invoice) =>
-        invoice.client.toLowerCase().includes(value)
+      const filtered = invoices.filter(
+        (invoice) => invoice.client.toLowerCase().includes(value)
       );
       setFilteredInvoices(filtered);
     }
@@ -79,7 +97,7 @@ const InvoiceList = () => {
             style={{ width: 200 }}
             prefix={<SearchOutlined />}
             value={searchText}
-            onChange={handleSearch} // Call handleSearch on input change
+            onChange={handleSearch}
           />
           <Button type="primary" onClick={onAddNewInvoice}>+ Add New Invoice</Button>
         </div>
@@ -88,7 +106,7 @@ const InvoiceList = () => {
       <Table columns={columns} dataSource={filteredInvoices} rowKey="id" locale={{ emptyText: "No data" }} />
 
       <Modal title="New Invoice" open={isModalOpen} onCancel={handleClose} footer={null} width={800}>
-        <NewInvoiceForm onSave={fetchInvoices} onClose={handleClose} />
+        <NewInvoiceForm onSave={() => {}} onClose={handleClose} customers={customerOptions} />
       </Modal>
     </div>
   );

@@ -1,0 +1,121 @@
+/* LeadsResponsive.css */
+
+/* Base table styles - ensures proper display on all devices */
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  }
+  
+  table.table.table-bordered {
+    width: 100%;
+    min-width: 100%;
+    table-layout: auto;
+    white-space: nowrap; /* Prevent text wrapping in cells */
+  }
+  
+  /* Mobile-specific adjustments (under 768px) */
+  @media (max-width: 767.98px) {
+    /* Header and search/button group */
+    .d-flex.justify-content-between.align-items-center.mb-3 {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+    }
+    
+    .d-flex.gap-2 {
+      flex-direction: column;
+      gap: 8px;
+      width: 100%;
+    }
+    
+    .d-flex.gap-2 > input.form-control2 {
+      width: 100% !important;
+      margin-right: 0 !important;
+    }
+    
+    .d-flex.gap-2 > button {
+      width: 100%;
+    }
+    
+    /* Table adjustments */
+    table.table.table-bordered {
+      min-width: 600px; /* Minimum width to maintain readability */
+      font-size: 14px; /* Slightly smaller text on mobile */
+    }
+    
+    th, td {
+      padding: 8px 12px; /* Slightly tighter padding on mobile */
+    }
+    
+    /* Full-screen form on mobile */
+    .position-fixed.top-0.end-0 {
+      width: 100% !important;
+      right: 0 !important;
+      left: 0 !important;
+      margin-right: 0 !important;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+  }
+  
+  /* Tablet and desktop styles (768px and above) */
+  @media (min-width: 768px) {
+    /* Restore original desktop layout */
+    .d-flex.justify-content-between.align-items-center.mb-3 {
+      flex-direction: row;
+      align-items: center;
+    }
+    
+    .d-flex.gap-2 {
+      flex-direction: row;
+      flex-wrap: nowrap;
+    }
+    
+    .d-flex.gap-2 > input.form-control2 {
+      width: 200px !important;
+    }
+    
+    .d-flex.gap-2 > button {
+      width: auto;
+    }
+    
+    /* Sidebar form on desktop */
+    .position-fixed.top-0.end-0 {
+      width: 350px !important;
+      right: 20px !important;
+      left: auto !important;
+    }
+    
+    /* Table adjustments for desktop */
+    table.table.table-bordered {
+      min-width: 100%;
+      font-size: inherit;
+    }
+    
+    th, td {
+      padding: 12px 16px;
+    }
+  }
+  
+  /* Visual scroll indicator for mobile tables */
+  .table-responsive::-webkit-scrollbar {
+    height: 4px;
+  }
+  
+  .table-responsive::-webkit-scrollbar-thumb {
+    background-color: rgba(0,0,0,0.2);
+    border-radius: 2px;
+  }
+  
+  /* Print styles */
+  @media print {
+    .table-responsive {
+      overflow-x: visible;
+    }
+    
+    table.table.table-bordered {
+      min-width: 100%;
+      width: 100%;
+    }
+  }

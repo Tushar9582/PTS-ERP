@@ -3,6 +3,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { db } from "./firebase";
 import { ref, push, onValue } from "firebase/database";
 import Swal from "sweetalert2";
+import "./Leads.css";
 
 
 const Leads = () => {
