@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { Table, Button, Modal, Input } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import NewInvoiceForm from "./NewInvoiceForm";
 import { ref, onValue } from "firebase/database";
-import { db } from "./firebase"; // Ensure the correct import path
+import { db } from "./firebase";
 
 const InvoiceList = () => {
   const [invoices, setInvoices] = useState([]);
@@ -16,65 +18,35 @@ const InvoiceList = () => {
   const [productOptions, setProductOptions] = useState([]);
   const [companies, setCompanies] = useState({});
   const [companyOptions, setCompanyOptions] = useState([]);
+  const [people, setPeople] = useState({});
+  const [peopleOptions, setPeopleOptions] = useState([]);
 
-  // Fetch customers from Firebase
   useEffect(() => {
-    const customersRef = ref(db, "customers");
-    onValue(customersRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        setCustomers(data);
-        const options = Object.keys(data).map((id) => ({
-          value: id,
-          label: data[id].name || "Unknown Customer",
-        }));
-        setCustomerOptions(options);
-      } else {
-        setCustomers({});
-        setCustomerOptions([]);
-      }
-    });
+    const fetchData = (path, setState, setOptions, labelField = "name") => {
+      const dataRef = ref(db, path);
+      onValue(dataRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          setState(data);
+          setOptions(
+            Object.keys(data).map((id) => ({
+              value: id,
+              label: data[id][labelField] || `Unknown ${path}`,
+            }))
+          );
+        } else {
+          setState({});
+          setOptions([]);
+        }
+      });
+    };
+    
+    fetchData("customers", setCustomers, setCustomerOptions);
+    fetchData("products", setProducts, setProductOptions);
+    fetchData("companies", setCompanies, setCompanyOptions);
+    fetchData("people", setPeople, setPeopleOptions);
   }, []);
 
-  // Fetch products from Firebase
-  useEffect(() => {
-    const productsRef = ref(db, "products");
-    onValue(productsRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        setProducts(data);
-        const options = Object.keys(data).map((id) => ({
-          value: id,
-          label: data[id].name || "Unknown Product",
-        }));
-        setProductOptions(options);
-      } else {
-        setProducts({});
-        setProductOptions([]);
-      }
-    });
-  }, []);
-
-  // Fetch companies from Firebase
-  useEffect(() => {
-    const companiesRef = ref(db, "companies");
-    onValue(companiesRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        setCompanies(data);
-        const options = Object.keys(data).map((id) => ({
-          value: id,
-          label: data[id].name || "Unknown Company",
-        }));
-        setCompanyOptions(options);
-      } else {
-        setCompanies({});
-        setCompanyOptions([]);
-      }
-    });
-  }, []);
-
-  // Fetch invoices from Firebase
   useEffect(() => {
     const invoicesRef = ref(db, "invoices");
     onValue(invoicesRef, (snapshot) => {
@@ -82,12 +54,10 @@ const InvoiceList = () => {
       if (data) {
         const invoiceList = Object.keys(data).map((key) => ({
           id: key,
-          clientId: data[key].clientId || "Unknown",
           client: customers[data[key].clientId]?.name || "Unknown Client",
-          companyId: data[key].companyId || "Unknown",
           company: companies[data[key].companyId]?.name || "Unknown Company",
-          productId: data[key].productId || "Unknown",
           product: products[data[key].productId]?.name || "Unknown Product",
+          person: people[data[key].personId]?.name || "Unknown Person",
           ...data[key],
         }));
         setInvoices(invoiceList);
@@ -97,31 +67,44 @@ const InvoiceList = () => {
         setFilteredInvoices([]);
       }
     });
-  }, [customers, products, companies]);
+  }, [customers, products, companies, people]);
 
-  // Handle search functionality
   const handleSearch = (e) => {
     const value = e.target.value.toLowerCase();
     setSearchText(value);
-    if (value === "") {
-      setFilteredInvoices(invoices);
-    } else {
-      const filtered = invoices.filter(
-        (invoice) =>
-          invoice.client.toLowerCase().includes(value) ||
-          invoice.product.toLowerCase().includes(value) ||
-          invoice.company.toLowerCase().includes(value)
-      );
-      setFilteredInvoices(filtered);
-    }
+    setFilteredInvoices(
+      value
+        ? invoices.filter(
+            (invoice) =>
+              invoice.client.toLowerCase().includes(value) ||
+              invoice.product.toLowerCase().includes(value) ||
+              invoice.company.toLowerCase().includes(value) ||
+              invoice.person.toLowerCase().includes(value)
+          )
+        : invoices
+    );
   };
 
-  const onAddNewInvoice = () => {
-    setIsModalOpen(true);
-  };
-
-  const handleClose = () => {
-    setIsModalOpen(false);
+  const generatePDF = () => {
+    const doc = new jsPDF();
+    doc.text("Invoice List", 14, 10);
+    autoTable(doc, {
+      startY: 20,
+      head: [["Number", "Client", "Company", "Product", "Person", "Date", "Invoice Date", "Total", "Status", "Created By"]],
+      body: filteredInvoices.map((invoice) => [
+        invoice.number,
+        invoice.client,
+        invoice.company,
+        invoice.product,
+        invoice.person,
+        invoice.date,
+        invoice.expireDate,
+        invoice.total,
+        invoice.status,
+        invoice.createdBy,
+      ]),
+    });
+    doc.save("invoices.pdf");
   };
 
   const columns = [
@@ -129,8 +112,9 @@ const InvoiceList = () => {
     { title: "Client", dataIndex: "client", key: "client" },
     { title: "Company", dataIndex: "company", key: "company" },
     { title: "Product", dataIndex: "product", key: "product" },
+    { title: "Person", dataIndex: "person", key: "person" },
     { title: "Date", dataIndex: "date", key: "date" },
-    { title: "Expire Date", dataIndex: "expireDate", key: "expireDate" },
+    { title: "Invoice Date", dataIndex: "expireDate", key: "expireDate" },
     { title: "Total", dataIndex: "total", key: "total" },
     { title: "Status", dataIndex: "status", key: "status" },
     { title: "Created By", dataIndex: "createdBy", key: "createdBy" },
@@ -142,14 +126,17 @@ const InvoiceList = () => {
         <h2>Invoice List</h2>
         <div style={{ display: "flex", gap: "8px" }}>
           <Input
-            placeholder="Search by Client, Company, or Product"
+            placeholder="Search by Client, Company, Product, or Person"
             allowClear
             style={{ width: 300 }}
             prefix={<SearchOutlined />}
             value={searchText}
             onChange={handleSearch}
           />
-          <Button type="primary" onClick={onAddNewInvoice}>
+          <Button type="primary" onClick={generatePDF}>
+            Export to PDF
+          </Button>
+          <Button type="primary" onClick={() => setIsModalOpen(true)}>
             + Add New Invoice
           </Button>
         </div>
@@ -157,13 +144,14 @@ const InvoiceList = () => {
 
       <Table columns={columns} dataSource={filteredInvoices} rowKey="id" locale={{ emptyText: "No data" }} />
 
-      <Modal title="New Invoice" open={isModalOpen} onCancel={handleClose} footer={null} width={800}>
+      <Modal title="New Invoice" open={isModalOpen} onCancel={() => setIsModalOpen(false)} footer={null} width={800}>
         <NewInvoiceForm
           onSave={() => {}}
-          onClose={handleClose}
+          onClose={() => setIsModalOpen(false)}
           customers={customerOptions}
           products={productOptions}
           companies={companyOptions}
+          people={peopleOptions}
         />
       </Modal>
     </div>

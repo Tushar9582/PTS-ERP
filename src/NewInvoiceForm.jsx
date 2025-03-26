@@ -5,13 +5,16 @@ import Swal from "sweetalert2";
 import "./NewInvoiceForm.css";
 
 const NewInvoiceForm = ({ onSave, onClose, customers = [] }) => {
+  const today = new Date().toISOString().split("T")[0];
+
   const [invoice, setInvoice] = useState({
     number: "",
     clientId: "",
-    companyId: "", // New field for company selection
-    productId: "", // New field for product selection
-    date: "",
-    expireDate: "",
+    companyId: "", 
+    productId: "", 
+    personId: "", 
+    date: today, 
+    expireDate: today, 
     total: "",
     status: "Draft",
     createdBy: "",
@@ -19,19 +22,15 @@ const NewInvoiceForm = ({ onSave, onClose, customers = [] }) => {
 
   const [products, setProducts] = useState([]);
   const [companies, setCompanies] = useState([]);
+  const [people, setPeople] = useState([]);
 
-  // Fetch Products from Firebase
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         const snapshot = await get(ref(db, "products"));
         if (snapshot.exists()) {
           const productData = snapshot.val();
-          const productList = Object.keys(productData).map((key) => ({
-            id: key,
-            name: productData[key].name,
-          }));
-          setProducts(productList);
+          setProducts(Object.keys(productData).map((key) => ({ id: key, name: productData[key].name })));
         }
       } catch (error) {
         console.error("Error fetching products:", error);
@@ -40,24 +39,34 @@ const NewInvoiceForm = ({ onSave, onClose, customers = [] }) => {
     fetchProducts();
   }, []);
 
-  // Fetch Companies from Firebase
   useEffect(() => {
     const fetchCompanies = async () => {
       try {
         const snapshot = await get(ref(db, "companies"));
         if (snapshot.exists()) {
           const companyData = snapshot.val();
-          const companyList = Object.keys(companyData).map((key) => ({
-            id: key,
-            name: companyData[key].name,
-          }));
-          setCompanies(companyList);
+          setCompanies(Object.keys(companyData).map((key) => ({ id: key, name: companyData[key].name })));
         }
       } catch (error) {
         console.error("Error fetching companies:", error);
       }
     };
     fetchCompanies();
+  }, []);
+
+  useEffect(() => {
+    const fetchPeople = async () => {
+      try {
+        const snapshot = await get(ref(db, "people"));
+        if (snapshot.exists()) {
+          const peopleData = snapshot.val();
+          setPeople(Object.keys(peopleData).map((key) => ({ id: key, name: peopleData[key].name })));
+        }
+      } catch (error) {
+        console.error("Error fetching people:", error);
+      }
+    };
+    fetchPeople();
   }, []);
 
   const handleChange = (e) => {
@@ -68,8 +77,9 @@ const NewInvoiceForm = ({ onSave, onClose, customers = [] }) => {
     if (
       !invoice.number.trim() ||
       !invoice.clientId.trim() ||
-      !invoice.companyId.trim() || // Ensure company is selected
-      !invoice.productId.trim() || // Ensure product is selected
+      !invoice.companyId.trim() ||
+      !invoice.productId.trim() ||
+      !invoice.personId.trim() ||
       !invoice.date.trim() ||
       !invoice.expireDate.trim() ||
       !invoice.total.trim() ||
@@ -85,13 +95,6 @@ const NewInvoiceForm = ({ onSave, onClose, customers = [] }) => {
       return;
     }
 
-    const validDatePattern = /^\d{4}-\d{2}-\d{2}$/;
-    if (!validDatePattern.test(invoice.date) || !validDatePattern.test(invoice.expireDate)) {
-      Swal.fire("Error!", "Invalid date format. Please use YYYY-MM-DD.", "error");
-      return;
-    }
-
-    // Save invoice to Firebase
     const newInvoiceRef = push(ref(db, "invoices"));
     set(newInvoiceRef, { ...invoice, total: totalValue })
       .then(() => {
@@ -116,9 +119,7 @@ const NewInvoiceForm = ({ onSave, onClose, customers = [] }) => {
         <select name="clientId" value={invoice.clientId} onChange={handleChange}>
           <option value="">Select Client</option>
           {customers.map((customer) => (
-            <option key={customer.value} value={customer.value}>
-              {customer.label || "Unnamed Client"}
-            </option>
+            <option key={customer.value} value={customer.value}>{customer.label || "Unnamed Client"}</option>
           ))}
         </select>
 
@@ -126,9 +127,7 @@ const NewInvoiceForm = ({ onSave, onClose, customers = [] }) => {
         <select name="companyId" value={invoice.companyId} onChange={handleChange}>
           <option value="">Select Company</option>
           {companies.map((company) => (
-            <option key={company.id} value={company.id}>
-              {company.name}
-            </option>
+            <option key={company.id} value={company.id}>{company.name}</option>
           ))}
         </select>
 
@@ -136,9 +135,15 @@ const NewInvoiceForm = ({ onSave, onClose, customers = [] }) => {
         <select name="productId" value={invoice.productId} onChange={handleChange}>
           <option value="">Select Product</option>
           {products.map((product) => (
-            <option key={product.id} value={product.id}>
-              {product.name}
-            </option>
+            <option key={product.id} value={product.id}>{product.name}</option>
+          ))}
+        </select>
+
+        <label>Person *</label>
+        <select name="personId" value={invoice.personId} onChange={handleChange}>
+          <option value="">Select Person</option>
+          {people.map((person) => (
+            <option key={person.id} value={person.id}>{person.name}</option>
           ))}
         </select>
 

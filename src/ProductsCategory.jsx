@@ -9,7 +9,7 @@ const ProductsCategory = () => {
   const [newCategory, setNewCategory] = useState({
     name: '',
     description: '',
-    color: ''
+    category: ''  // Changed from 'color' to 'category'
   });
 
   // Fetch data from Firebase on component mount
@@ -44,7 +44,7 @@ const ProductsCategory = () => {
     push(categoriesRef, newCategory)
       .then(() => {
         console.log("Category saved to Firebase!");
-        setNewCategory({ name: '', description: '', color: '' });
+        setNewCategory({ name: '', description: '', category: '' });
         setIsFormOpen(false);
       })
       .catch((error) => {
@@ -71,7 +71,7 @@ const ProductsCategory = () => {
             <table className="table table-bordered">
               <thead className="table-light">
                 <tr>
-                  {["Name", "Description", "Color"].map((heading) => (
+                  {["Name", "Description", "Product Category"].map((heading) => (
                     <th key={heading} className="text-center">{heading}</th>
                   ))}
                 </tr>
@@ -82,7 +82,7 @@ const ProductsCategory = () => {
                     <tr key={category.id}>
                       <td className="text-center">{category.name}</td>
                       <td className="text-center">{category.description}</td>
-                      <td className="text-center" style={{ backgroundColor: category.color }}></td>
+                      <td className="text-center">{category.category}</td>
                     </tr>
                   ))
                 ) : (
@@ -112,7 +112,7 @@ const ProductsCategory = () => {
           {[
             { label: "Name", name: "name", type: "text" },
             { label: "Description", name: "description", type: "text" },
-            { label: "Color", name: "color", type: "color" }
+            { label: "Product Category", name: "category", type: "text" }  // Changed from 'color' to 'category'
           ].map(({ label, name, type }) => (
             <div className="col-12" key={name}>
               <label className="form-label">{label}</label>

@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { db } from "./firebase"; // Import Firebase Realtime Database
+import { db } from "./firebase";
 import Swal from "sweetalert2";
 import { ref, push, onValue, set } from "firebase/database";
 
 const Products = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [newProduct, setNewProduct] = useState({
     name: "",
     category: "",
@@ -16,9 +17,10 @@ const Products = () => {
     ref: ""
   });
 
-  // Fetch products from Firebase on component mount
+  // Fetch products and categories from Firebase
   useEffect(() => {
-    const productsRef = ref(db, "products"); // Reference to 'products' collection
+    // Fetch products
+    const productsRef = ref(db, "products");
     onValue(productsRef, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.val();
@@ -31,22 +33,38 @@ const Products = () => {
         setProducts([]);
       }
     });
+
+    // Fetch categories
+    const categoriesRef = ref(db, "categories");
+    onValue(categoriesRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        const categoriesList = Object.keys(data).map((key) => ({
+          id: key,
+          ...data[key]
+        }));
+        setCategories(categoriesList);
+      } else {
+        setCategories([]);
+      }
+    });
   }, []);
 
-  // Handle input change
+  // Find full category data by name
+  const getCategoryData = (categoryName) => {
+    return categories.find(cat => cat.name === categoryName) || {};
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setNewProduct({ ...newProduct, [name]: value });
   };
 
-  // Handle form submission to add a new product
   const handleSubmit = (e) => {
     e.preventDefault();
   
-    // Generate a unique ID for the new product
     const newProductRef = push(ref(db, "products"));
   
-    // Save product data to Firebase
     set(newProductRef, newProduct)
       .then(() => {
         Swal.fire({
@@ -56,7 +74,6 @@ const Products = () => {
           confirmButtonText: "OK",
         });
   
-        // Reset form fields
         setNewProduct({
           name: "",
           category: "",
@@ -77,7 +94,6 @@ const Products = () => {
         console.error("Error adding product:", error);
       });
   };
-  
 
   return (
     <div className="d-flex vh-100 bg-light" style={{ marginLeft: "200px" }}>
@@ -94,28 +110,33 @@ const Products = () => {
             </div>
           </div>
 
-          {/* Product Table */}
           <div className="table-responsive">
             <table className="table table-bordered">
               <thead className="table-light">
                 <tr>
-                  {["Name", "Product Category", "Currency", "Price", "Description", "Ref"].map((heading) => (
+                  {["Name", "Category (Name + Description)", "Currency", "Price", "Product Description", "Ref"].map((heading) => (
                     <th key={heading} className="text-center">{heading}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {products.length > 0 ? (
-                  products.map((product, index) => (
-                    <tr key={index}>
-                      <td className="text-center">{product.name}</td>
-                      <td className="text-center">{product.category}</td>
-                      <td className="text-center">{product.currency}</td>
-                      <td className="text-center">{product.price}</td>
-                      <td className="text-center">{product.description}</td>
-                      <td className="text-center">{product.ref}</td>
-                    </tr>
-                  ))
+                  products.map((product) => {
+                    const categoryData = getCategoryData(product.category);
+                    return (
+                      <tr key={product.id}>
+                        <td className="text-center">{product.name}</td>
+                        <td className="text-center">
+                          <div><strong>{categoryData.name || product.category}</strong></div>
+                          <div className="text-muted small">{categoryData.description || "-"}</div>
+                        </td>
+                        <td className="text-center">{product.currency}</td>
+                        <td className="text-center">{product.price}</td>
+                        <td className="text-center">{product.description}</td>
+                        <td className="text-center">{product.ref}</td>
+                      </tr>
+                    );
+                  })
                 ) : (
                   <tr>
                     <td className="text-center" colSpan="6">No data available</td>
@@ -127,7 +148,6 @@ const Products = () => {
         </div>
       </main>
 
-      {/* Slide-in Form */}
       <div
         className={`position-fixed top-0 end-0 vh-100 bg-white shadow p-4 transition ${
           isFormOpen ? "translate-0" : "translate-100"
@@ -142,7 +162,6 @@ const Products = () => {
         <button className="btn-close position-absolute top-2 end-2" onClick={() => setIsFormOpen(false)}></button>
         <h2 className="fs-3 fw-bold mb-3">Add New Product</h2>
 
-        {/* Bootstrap Form */}
         <form className="row g-3" onSubmit={handleSubmit}>
           <div className="col-12">
             <label className="form-label">Name</label>
@@ -168,10 +187,12 @@ const Products = () => {
               required
               style={{border:'1px solid black'}}
             >
-              <option value="">Select</option>
-              <option value="Category 1">Category 1</option>
-              <option value="Category 2">Category 2</option>
-              <option value="Category 3">Category 3</option>
+              <option value="">Select Category</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.category}>
+                  {category.category}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -204,35 +225,33 @@ const Products = () => {
               style={{border:'1px solid black'}}
             />
           </div>
-          {/* Description Field */}
-<div className="col-12">
-  <label className="form-label">Description</label>
-  <textarea
-    className="form-control"
-    placeholder="Enter description"
-    name="description"
-    value={newProduct.description}
-    onChange={handleInputChange}
-    required
-    style={{border:'1px solid black'}}
-  ></textarea>
-</div>
 
-{/* Ref Field */}
-<div className="col-12">
-  <label className="form-label">Ref</label>
-  <input
-    type="text"
-    className="form-control"
-    placeholder="Enter reference"
-    name="ref"
-    value={newProduct.ref}
-    onChange={handleInputChange}
-    required
-    style={{border:'1px solid black'}}
-  />
-</div>
+          <div className="col-12">
+            <label className="form-label">Description</label>
+            <textarea
+              className="form-control"
+              placeholder="Enter description"
+              name="description"
+              value={newProduct.description}
+              onChange={handleInputChange}
+              required
+              style={{border:'1px solid black'}}
+            ></textarea>
+          </div>
 
+          <div className="col-12">
+            <label className="form-label">Ref</label>
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Enter reference"
+              name="ref"
+              value={newProduct.ref}
+              onChange={handleInputChange}
+              required
+              style={{border:'1px solid black'}}
+            />
+          </div>
 
           <div className="col-12">
             <button type="submit" className="btn btn-primary w-100">

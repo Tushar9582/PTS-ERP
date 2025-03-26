@@ -7,8 +7,7 @@ const Peoples = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [people, setPeople] = useState([]);
   const [newPerson, setNewPerson] = useState({
-    firstname: '',
-    lastname: '',
+    name: '',
     company: '',
     country: '',
     phone: '',
@@ -45,7 +44,7 @@ const Peoples = () => {
     push(peopleRef, newPerson)
       .then(() => {
         console.log("Person saved to Firebase!");
-        setNewPerson({ firstname: '', lastname: '', company: '', country: '', phone: '', email: '' });
+        setNewPerson({ name: '', company: '', country: '', phone: '', email: '' });
         setIsFormOpen(false);
       })
       .catch((error) => {
@@ -72,7 +71,7 @@ const Peoples = () => {
             <table className="table table-bordered">
               <thead className="table-light">
                 <tr>
-                  {["Firstname", "Lastname", "Company", "Country", "Phone", "Email"].map((heading) => (
+                  {["Name", "Company", "Country", "Phone", "Email"].map((heading) => (
                     <th key={heading} className="text-center">{heading}</th>
                   ))}
                 </tr>
@@ -81,8 +80,7 @@ const Peoples = () => {
                 {people.length > 0 ? (
                   people.map((person) => (
                     <tr key={person.id}>
-                      <td className="text-center">{person.firstname}</td>
-                      <td className="text-center">{person.lastname}</td>
+                      <td className="text-center">{person.name}</td>
                       <td className="text-center">{person.company}</td>
                       <td className="text-center">{person.country}</td>
                       <td className="text-center">{person.phone}</td>
@@ -91,7 +89,7 @@ const Peoples = () => {
                   ))
                 ) : (
                   <tr>
-                    <td className="text-center" colSpan="6">No data available</td>
+                    <td className="text-center" colSpan="5">No data available</td>
                   </tr>
                 )}
               </tbody>
@@ -105,8 +103,8 @@ const Peoples = () => {
         className={"position-fixed top-0 end-0 bg-white shadow p-4 " + (isFormOpen ? "translate-0" : "translate-100")}
         style={{
           width: "350px",
-          height: "100vh", // Ensure the form takes the full height of the viewport
-          overflowY: "auto", // Add scroll if the content exceeds the height
+          height: "100vh",
+          overflowY: "auto",
           marginRight: "20px",
           transform: isFormOpen ? "translateX(0)" : "translateX(100%)",
           transition: "transform 0.3s ease-in-out",
@@ -116,30 +114,15 @@ const Peoples = () => {
         <h2 className="fs-3 fw-bold mb-3">Add New Person</h2>
 
         <form className="row g-3" onSubmit={handleSubmit}>
-          {/* Firstname */}
+          {/* Name */}
           <div className="col-12">
-            <label className="form-label">Firstname *</label>
+            <label className="form-label">Name *</label>
             <input
               type="text"
               className="form-control"
-              placeholder="Enter Firstname"
-              name="firstname"
-              value={newPerson.firstname}
-              onChange={handleInputChange}
-              required
-              style={{ border: '1px solid #ccc', borderRadius: '4px', padding: '8px' }}
-            />
-          </div>
-
-          {/* Lastname */}
-          <div className="col-12">
-            <label className="form-label">Lastname *</label>
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Enter Lastname"
-              name="lastname"
-              value={newPerson.lastname}
+              placeholder="Enter Name"
+              name="name"
+              value={newPerson.name}
               onChange={handleInputChange}
               required
               style={{ border: '1px solid #ccc', borderRadius: '4px', padding: '8px' }}
@@ -202,11 +185,8 @@ const Peoples = () => {
             />
           </div>
 
-          {/* Submit Button */}
           <div className="col-12">
-            <button type="submit" className="btn btn-primary w-100" style={{ padding: '10px', borderRadius: '4px' }}>
-              Submit
-            </button>
+            <button type="submit" className="btn btn-primary w-100">Submit</button>
           </div>
         </form>
       </div>
