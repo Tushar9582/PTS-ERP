@@ -49,7 +49,7 @@ const Navbar = () => {
           </li>
           <li className={location.pathname === "/customers" ? "active" : ""}>
             <Link to="/customers" className="nav-item">
-              <FaCog size={18} />customers 
+              <FaCog size={18} />Clients 
             </Link>
           </li>
           <li className={location.pathname === "/peoples" ? "active" : ""}>

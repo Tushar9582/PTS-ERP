@@ -8,15 +8,17 @@ const NewInvoiceForm = ({ onSave, onClose, customers = [] }) => {
   const [invoice, setInvoice] = useState({
     number: "",
     clientId: "",
+    companyId: "", // New field for company selection
+    productId: "", // New field for product selection
     date: "",
     expireDate: "",
     total: "",
     status: "Draft",
     createdBy: "",
-    productId: "", // New field for product selection
   });
 
   const [products, setProducts] = useState([]);
+  const [companies, setCompanies] = useState([]);
 
   // Fetch Products from Firebase
   useEffect(() => {
@@ -38,6 +40,26 @@ const NewInvoiceForm = ({ onSave, onClose, customers = [] }) => {
     fetchProducts();
   }, []);
 
+  // Fetch Companies from Firebase
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      try {
+        const snapshot = await get(ref(db, "companies"));
+        if (snapshot.exists()) {
+          const companyData = snapshot.val();
+          const companyList = Object.keys(companyData).map((key) => ({
+            id: key,
+            name: companyData[key].name,
+          }));
+          setCompanies(companyList);
+        }
+      } catch (error) {
+        console.error("Error fetching companies:", error);
+      }
+    };
+    fetchCompanies();
+  }, []);
+
   const handleChange = (e) => {
     setInvoice({ ...invoice, [e.target.name]: e.target.value });
   };
@@ -46,11 +68,12 @@ const NewInvoiceForm = ({ onSave, onClose, customers = [] }) => {
     if (
       !invoice.number.trim() ||
       !invoice.clientId.trim() ||
+      !invoice.companyId.trim() || // Ensure company is selected
+      !invoice.productId.trim() || // Ensure product is selected
       !invoice.date.trim() ||
       !invoice.expireDate.trim() ||
       !invoice.total.trim() ||
-      !invoice.createdBy.trim() ||
-      !invoice.productId.trim() // Ensure product is selected
+      !invoice.createdBy.trim()
     ) {
       Swal.fire("Error!", "All fields are required!", "error");
       return;
@@ -92,29 +115,31 @@ const NewInvoiceForm = ({ onSave, onClose, customers = [] }) => {
         <label>Client *</label>
         <select name="clientId" value={invoice.clientId} onChange={handleChange}>
           <option value="">Select Client</option>
-          {customers.length > 0 ? (
-            customers.map((customer) => (
-              <option key={customer.value} value={customer.value}>
-                {customer.label || "Unnamed Client"}
-              </option>
-            ))
-          ) : (
-            <option disabled>No clients available</option>
-          )}
+          {customers.map((customer) => (
+            <option key={customer.value} value={customer.value}>
+              {customer.label || "Unnamed Client"}
+            </option>
+          ))}
+        </select>
+
+        <label>Company *</label>
+        <select name="companyId" value={invoice.companyId} onChange={handleChange}>
+          <option value="">Select Company</option>
+          {companies.map((company) => (
+            <option key={company.id} value={company.id}>
+              {company.name}
+            </option>
+          ))}
         </select>
 
         <label>Product *</label>
         <select name="productId" value={invoice.productId} onChange={handleChange}>
           <option value="">Select Product</option>
-          {products.length > 0 ? (
-            products.map((product) => (
-              <option key={product.id} value={product.id}>
-                {product.name}
-              </option>
-            ))
-          ) : (
-            <option disabled>No products available</option>
-          )}
+          {products.map((product) => (
+            <option key={product.id} value={product.id}>
+              {product.name}
+            </option>
+          ))}
         </select>
 
         <label>Date *</label>

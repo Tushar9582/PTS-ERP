@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Table, Button, Modal, Input, Select } from "antd";
+import { Table, Button, Modal, Input } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import NewInvoiceForm from "./NewInvoiceForm";
 import { ref, onValue } from "firebase/database";
@@ -10,10 +10,12 @@ const InvoiceList = () => {
   const [filteredInvoices, setFilteredInvoices] = useState([]);
   const [searchText, setSearchText] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [customers, setCustomers] = useState({}); // Store customers as an object (id -> name)
-  const [customerOptions, setCustomerOptions] = useState([]); // For dropdown options
-  const [products, setProducts] = useState({}); // Store products as an object (id -> name)
-  const [productOptions, setProductOptions] = useState([]); // For dropdown options
+  const [customers, setCustomers] = useState({});
+  const [customerOptions, setCustomerOptions] = useState([]);
+  const [products, setProducts] = useState({});
+  const [productOptions, setProductOptions] = useState([]);
+  const [companies, setCompanies] = useState({});
+  const [companyOptions, setCompanyOptions] = useState([]);
 
   // Fetch customers from Firebase
   useEffect(() => {
@@ -22,9 +24,8 @@ const InvoiceList = () => {
       const data = snapshot.val();
       if (data) {
         setCustomers(data);
-        // Convert to dropdown options
         const options = Object.keys(data).map((id) => ({
-          value: id, // clientId
+          value: id,
           label: data[id].name || "Unknown Customer",
         }));
         setCustomerOptions(options);
@@ -54,6 +55,25 @@ const InvoiceList = () => {
     });
   }, []);
 
+  // Fetch companies from Firebase
+  useEffect(() => {
+    const companiesRef = ref(db, "companies");
+    onValue(companiesRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        setCompanies(data);
+        const options = Object.keys(data).map((id) => ({
+          value: id,
+          label: data[id].name || "Unknown Company",
+        }));
+        setCompanyOptions(options);
+      } else {
+        setCompanies({});
+        setCompanyOptions([]);
+      }
+    });
+  }, []);
+
   // Fetch invoices from Firebase
   useEffect(() => {
     const invoicesRef = ref(db, "invoices");
@@ -62,10 +82,12 @@ const InvoiceList = () => {
       if (data) {
         const invoiceList = Object.keys(data).map((key) => ({
           id: key,
-          clientId: data[key].clientId || "Unknown", // Store clientId
-          client: customers[data[key].clientId]?.name || "Unknown Client", // Fetch correct customer name
-          productId: data[key].productId || "Unknown", // Store productId
-          product: products[data[key].productId]?.name || "Unknown Product", // Fetch correct product name
+          clientId: data[key].clientId || "Unknown",
+          client: customers[data[key].clientId]?.name || "Unknown Client",
+          companyId: data[key].companyId || "Unknown",
+          company: companies[data[key].companyId]?.name || "Unknown Company",
+          productId: data[key].productId || "Unknown",
+          product: products[data[key].productId]?.name || "Unknown Product",
           ...data[key],
         }));
         setInvoices(invoiceList);
@@ -75,7 +97,7 @@ const InvoiceList = () => {
         setFilteredInvoices([]);
       }
     });
-  }, [customers, products]); // Re-run when customers or products change
+  }, [customers, products, companies]);
 
   // Handle search functionality
   const handleSearch = (e) => {
@@ -85,7 +107,10 @@ const InvoiceList = () => {
       setFilteredInvoices(invoices);
     } else {
       const filtered = invoices.filter(
-        (invoice) => invoice.client.toLowerCase().includes(value) || invoice.product.toLowerCase().includes(value)
+        (invoice) =>
+          invoice.client.toLowerCase().includes(value) ||
+          invoice.product.toLowerCase().includes(value) ||
+          invoice.company.toLowerCase().includes(value)
       );
       setFilteredInvoices(filtered);
     }
@@ -102,6 +127,7 @@ const InvoiceList = () => {
   const columns = [
     { title: "Number", dataIndex: "number", key: "number" },
     { title: "Client", dataIndex: "client", key: "client" },
+    { title: "Company", dataIndex: "company", key: "company" },
     { title: "Product", dataIndex: "product", key: "product" },
     { title: "Date", dataIndex: "date", key: "date" },
     { title: "Expire Date", dataIndex: "expireDate", key: "expireDate" },
@@ -116,21 +142,29 @@ const InvoiceList = () => {
         <h2>Invoice List</h2>
         <div style={{ display: "flex", gap: "8px" }}>
           <Input
-            placeholder="Search by Client or Product"
+            placeholder="Search by Client, Company, or Product"
             allowClear
-            style={{ width: 250 }}
+            style={{ width: 300 }}
             prefix={<SearchOutlined />}
             value={searchText}
             onChange={handleSearch}
           />
-          <Button type="primary" onClick={onAddNewInvoice}>+ Add New Invoice</Button>
+          <Button type="primary" onClick={onAddNewInvoice}>
+            + Add New Invoice
+          </Button>
         </div>
       </div>
 
       <Table columns={columns} dataSource={filteredInvoices} rowKey="id" locale={{ emptyText: "No data" }} />
 
       <Modal title="New Invoice" open={isModalOpen} onCancel={handleClose} footer={null} width={800}>
-        <NewInvoiceForm onSave={() => {}} onClose={handleClose} customers={customerOptions} products={productOptions} />
+        <NewInvoiceForm
+          onSave={() => {}}
+          onClose={handleClose}
+          customers={customerOptions}
+          products={productOptions}
+          companies={companyOptions}
+        />
       </Modal>
     </div>
   );
