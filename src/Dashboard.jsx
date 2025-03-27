@@ -1,151 +1,145 @@
 import React from 'react';
-import './Dashboard.css';  // Import the CSS file
+import './Dashboard.css';
+import { FiDollarSign, FiUsers, FiFileText, FiClock } from 'react-icons/fi';
+import { BsArrowUpRight, BsArrowDownRight } from 'react-icons/bs';
 
 const InvoiceCard = () => {
   return (
-    <div>
-      {/* First Component */}
-      <div className="invoice-card">
-        <div className="whiteBox shadow">
-          <div className="header">
-            <h3>Invoices</h3>
-          </div>
-          <div className="divider"></div>
-          <div className="content">
-            <div className="row">
-              <div className="label">This Month</div>
-              <div className="vertical-divider"></div>
-              <div className="value">
-                <span className="tag">$ 00.00</span>
-              </div>
+    <div className="dashboard-container">
+      {/* Card Grid Section */}
+      <div className="card-grid">
+        {/* Invoice Card */}
+        <div className="dashboard-card">
+          <div className="card-header">
+            <span className="card-title">Invoices</span>
+            <div className="card-icon" style={{ color: 'var(--primary)', backgroundColor: 'rgba(66, 42, 251, 0.1)' }}>
+              <FiDollarSign size={18} />
             </div>
+          </div>
+          <div className="card-value">$0.00</div>
+          <div className="card-footer">
+            <BsArrowUpRight className="trend-up" />
+            <span style={{ marginLeft: 4 }}>This Month</span>
           </div>
         </div>
 
-        <div className="whiteBox shadow">
-          <div className="header">
-            <h3>Quotes For Customers</h3>
-          </div>
-          <div className="divider"></div>
-          <div className="content">
-            <div className="row">
-              <div className="label">This Month</div>
-              <div className="vertical-divider"></div>
-              <div className="value">
-                <span className="tag" style={{ backgroundColor: '#722ed1' }}>$ 00.00</span>
-              </div>
+        {/* Customer Quotes Card */}
+        <div className="dashboard-card">
+          <div className="card-header">
+            <span className="card-title">Customer Quotes</span>
+            <div className="card-icon" style={{ color: '#6A00F4', backgroundColor: 'rgba(106, 0, 244, 0.1)' }}>
+              <FiUsers size={18} />
             </div>
+          </div>
+          <div className="card-value">$0.00</div>
+          <div className="card-footer">
+            <BsArrowUpRight className="trend-up" />
+            <span style={{ marginLeft: 4 }}>This Month</span>
           </div>
         </div>
 
-        <div className="whiteBox shadow">
-          <div className="header">
-            <h3>Quotes For Leads</h3>
-          </div>
-          <div className="divider"></div>
-          <div className="content">
-            <div className="row">
-              <div className="label">This Month</div>
-              <div className="vertical-divider"></div>
-              <div className="value">
-                <span className="tag" style={{ backgroundColor: '#52c41a' }}>$ 00.00</span>
-              </div>
+        {/* Lead Quotes Card */}
+        <div className="dashboard-card">
+          <div className="card-header">
+            <span className="card-title">Lead Quotes</span>
+            <div className="card-icon" style={{ color: 'var(--success)', backgroundColor: 'rgba(5, 205, 153, 0.1)' }}>
+              <FiFileText size={18} />
             </div>
+          </div>
+          <div className="card-value">$0.00</div>
+          <div className="card-footer">
+            <BsArrowDownRight className="trend-down" />
+            <span style={{ marginLeft: 4 }}>This Month</span>
           </div>
         </div>
 
-        <div className="whiteBox shadow">
-          <div className="header">
-            <h3>Unpaid</h3>
-          </div>
-          <div className="divider"></div>
-          <div className="content">
-            <div className="row">
-              <div className="label">Not Paid</div>
-              <div className="vertical-divider"></div>
-              <div className="value">
-                <span className="tag" style={{ backgroundColor: '#f5222d' }}>$ 00.00</span>
-              </div>
+        {/* Unpaid Card */}
+        <div className="dashboard-card">
+          <div className="card-header">
+            <span className="card-title">Unpaid</span>
+            <div className="card-icon" style={{ color: 'var(--danger)', backgroundColor: 'rgba(255, 84, 112, 0.1)' }}>
+              <FiClock size={18} />
             </div>
+          </div>
+          <div className="card-value">$0.00</div>
+          <div className="card-footer">
+            <BsArrowDownRight className="trend-down" />
+            <span style={{ marginLeft: 4 }}>Not Paid</span>
           </div>
         </div>
       </div>
 
-      {/* Second Component */}
-      {/* <h1>Quotes For Leads</h1> */}
-      <div className="seconddiv">
-      <table className="invoice-table">
-        <thead>
-          <tr>
-            <th>Invoices</th>
-            <th>Quotes For Customers</th>
-            <th>Quotes For Leads</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Draft 0%</td>
-            <td>Draft 0%</td>
-            <td>Draft 0%</td>
-          </tr>
-          <tr>
-            <td>Pending 0%</td>
-            <td>Pending 0%</td>
-            <td>Pending 0%</td>
-          </tr>
-          <tr>
-            <td>Unpaid 0%</td>
-            <td>Sent 0%</td>
-            <td>Sent 0%</td>
-          </tr>
-          <tr>
-            <td>Overdue 0%</td>
-            <td>Declined 0%</td>
-            <td>Declined 0%</td>
-          </tr>
-          <tr>
-            <td>Partially 0%</td>
-            <td>Accepted 0%</td>
-            <td>Accepted 0%</td>
-          </tr>
-          <tr>
-            <td>Paid 0%</td>
-            <td>Expired 0%</td>
-            <td>Expired 0%</td>
-          </tr>
-        </tbody>
-      </table>
+      {/* Table Section */}
+      <div className="table-section">
+        <h3 className="section-title">Quotes Overview</h3>
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Invoices</th>
+              <th>Customer Quotes</th>
+              <th>Lead Quotes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span className="status-badge" style={{ background: 'rgba(66, 42, 251, 0.1)', color: 'var(--primary)' }}>Draft 0%</span></td>
+              <td><span className="status-badge" style={{ background: 'rgba(66, 42, 251, 0.1)', color: 'var(--primary)' }}>Draft 0%</span></td>
+              <td><span className="status-badge" style={{ background: 'rgba(66, 42, 251, 0.1)', color: 'var(--primary)' }}>Draft 0%</span></td>
+            </tr>
+            <tr>
+              <td><span className="status-badge" style={{ background: 'rgba(255, 212, 102, 0.1)', color: 'var(--warning)' }}>Pending 0%</span></td>
+              <td><span className="status-badge" style={{ background: 'rgba(255, 212, 102, 0.1)', color: 'var(--warning)' }}>Pending 0%</span></td>
+              <td><span className="status-badge" style={{ background: 'rgba(255, 212, 102, 0.1)', color: 'var(--warning)' }}>Pending 0%</span></td>
+            </tr>
+            <tr>
+              <td><span className="status-badge" style={{ background: 'rgba(255, 84, 112, 0.1)', color: 'var(--danger)' }}>Unpaid 0%</span></td>
+              <td><span className="status-badge" style={{ background: 'rgba(131, 217, 255, 0.1)', color: 'var(--secondary)' }}>Sent 0%</span></td>
+              <td><span className="status-badge" style={{ background: 'rgba(131, 217, 255, 0.1)', color: 'var(--secondary)' }}>Sent 0%</span></td>
+            </tr>
+            <tr>
+              <td><span className="status-badge" style={{ background: 'rgba(255, 84, 112, 0.1)', color: 'var(--danger)' }}>Overdue 0%</span></td>
+              <td><span className="status-badge" style={{ background: 'rgba(255, 84, 112, 0.1)', color: 'var(--danger)' }}>Declined 0%</span></td>
+              <td><span className="status-badge" style={{ background: 'rgba(255, 84, 112, 0.1)', color: 'var(--danger)' }}>Declined 0%</span></td>
+            </tr>
+            <tr>
+              <td><span className="status-badge" style={{ background: 'rgba(5, 205, 153, 0.1)', color: 'var(--success)' }}>Partially 0%</span></td>
+              <td><span className="status-badge" style={{ background: 'rgba(5, 205, 153, 0.1)', color: 'var(--success)' }}>Accepted 0%</span></td>
+              <td><span className="status-badge" style={{ background: 'rgba(5, 205, 153, 0.1)', color: 'var(--success)' }}>Accepted 0%</span></td>
+            </tr>
+            <tr>
+              <td><span className="status-badge" style={{ background: 'rgba(5, 205, 153, 0.1)', color: 'var(--success)' }}>Paid 0%</span></td>
+              <td><span className="status-badge" style={{ background: 'rgba(163, 174, 208, 0.1)', color: 'var(--gray)' }}>Expired 0%</span></td>
+              <td><span className="status-badge" style={{ background: 'rgba(163, 174, 208, 0.1)', color: 'var(--gray)' }}>Expired 0%</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-      {/* third */}
-      <div className="pad20">
-      <h3 className="customers-heading">Customers</h3>
-      <div className="progress-container">
-        <div className="ant-progress-circle" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-          <div className="ant-progress-inner">
-            <svg className="ant-progress-circle-svg" viewBox="0 0 100 100" role="presentation">
-              <circle className="ant-progress-circle-trail" r="47" cx="50" cy="50" />
-              <circle className="ant-progress-circle-path" r="47" cx="50" cy="50" />
-              <circle className="ant-progress-circle-path active" r="47" cx="50" cy="50" />
+      {/* Progress Section */}
+      <div className="progress-section">
+        <h3 className="section-title">Customer Analytics</h3>
+        <div className="progress-container">
+          <div className="circular-progress">
+            <svg className="progress-circle" viewBox="0 0 100 100">
+              <circle className="progress-bg" cx="50" cy="50" r="45" />
+              <circle className="progress-fill" cx="50" cy="50" r="45" strokeDasharray="283" strokeDashoffset="283" />
             </svg>
-            <span className="ant-progress-text" title="0%">0%</span>
+            <div className="progress-text">0%</div>
           </div>
-        </div>
-        <p className="progress-label">New Customer This Month</p>
-        <div className="ant-divider" role="separator"></div>
-        <div className="ant-statistic">
-          <div className="ant-statistic-title">Active Customer</div>
-          <div className="ant-statistic-content">
-            <span className="ant-statistic-content-value">
-              <span className="ant-statistic-content-value-int">0</span>
-              <span className="ant-statistic-content-value-decimal">.00</span>
-            </span>
-            <span className="ant-statistic-content-suffix">%</span>
+          <p className="progress-label">New Customers This Month</p>
+          <div style={{ display: 'flex', gap: '40px', marginTop: '20px' }}>
+            <div className="stats-item">
+              <div className="stats-value">0</div>
+              <div className="stats-label">Active Customers</div>
+            </div>
+            <div className="stats-item">
+              <div className="stats-value">0%</div>
+              <div className="stats-label">Conversion Rate</div>
+            </div>
           </div>
         </div>
       </div>
     </div>
-      </div>
-      </div>
   );
 };
 

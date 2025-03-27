@@ -6,10 +6,10 @@
 }
 
 .sidebar {
-  width: 260px; /* Sidebar width */
+  width: 260px;
   height: 100vh;
-  background-color: #fff;
-  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  background-color: #F4F7FE; /* Horizon UI's soft blue */
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05); /* Lighter shadow */
   position: fixed;
   left: 0;
   top: 0;
@@ -18,6 +18,8 @@
   padding: 20px 10px;
   overflow-y: auto;
   transition: transform 0.3s ease-in-out;
+  z-index: 1000;
+  border-right: 1px solid rgba(0, 0, 0, 0.05); /* Subtle right border */
 }
 
 /* Sidebar should always be visible on desktop */
