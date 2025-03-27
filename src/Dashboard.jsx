@@ -1,44 +1,100 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import './Dashboard.css';
 import { FiDollarSign, FiUsers, FiFileText, FiClock } from 'react-icons/fi';
 import { BsArrowUpRight, BsArrowDownRight } from 'react-icons/bs';
+import { ref, onValue } from 'firebase/database';
+import { db } from './firebase'; // Make sure this path is correct
 
 const InvoiceCard = () => {
+  const [invoiceData, setInvoiceData] = useState({
+    count: 0,
+    totalAmount: 0,
+    loading: true
+  });
+
+  useEffect(() => {
+    const fetchInvoices = () => {
+      const invoicesRef = ref(db, 'invoices');
+      onValue(invoicesRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          const invoiceList = Object.values(data);
+          const total = invoiceList.reduce((sum, invoice) => {
+            return sum + (parseFloat(invoice.total) || 0);
+          }, 0);
+          
+          setInvoiceData({
+            count: invoiceList.length,
+            totalAmount: total,
+            loading: false
+          });
+        } else {
+          setInvoiceData({
+            count: 0,
+            totalAmount: 0,
+            loading: false
+          });
+        }
+      });
+    };
+
+    fetchInvoices();
+  }, []);
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2
+    }).format(amount);
+  };
+
   return (
     <div className="dashboard-container">
       {/* Card Grid Section */}
       <div className="card-grid">
-        {/* Invoice Card */}
+        {/* Invoice Count Card */}
         <div className="dashboard-card">
           <div className="card-header">
-            <span className="card-title">Invoices</span>
+            <span className="card-title"> Total Invoices</span>
             <div className="card-icon" style={{ color: 'var(--primary)', backgroundColor: 'rgba(66, 42, 251, 0.1)' }}>
-              <FiDollarSign size={18} />
+            <FiUsers size={18} />
             </div>
           </div>
-          <div className="card-value">$0.00</div>
+          <div className="card-value">
+            {invoiceData.loading ? '...' : invoiceData.count}
+          </div>
           <div className="card-footer">
             <BsArrowUpRight className="trend-up" />
             <span style={{ marginLeft: 4 }}>This Month</span>
           </div>
         </div>
 
-        {/* Customer Quotes Card */}
+        {/* Invoice Total Card */}
         <div className="dashboard-card">
           <div className="card-header">
-            <span className="card-title">Customer Quotes</span>
+            <span className="card-title">TotalInvoices ⟨₹⟩ </span>
             <div className="card-icon" style={{ color: '#6A00F4', backgroundColor: 'rgba(106, 0, 244, 0.1)' }}>
               <FiUsers size={18} />
             </div>
           </div>
-          <div className="card-value">$0.00</div>
+          <div className="card-value">
+  {invoiceData.loading ? '...' : (
+    <span>
+      ₹{invoiceData.totalAmount.toLocaleString('en-IN', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      })}
+    </span>
+  )}
+</div>
           <div className="card-footer">
             <BsArrowUpRight className="trend-up" />
             <span style={{ marginLeft: 4 }}>This Month</span>
           </div>
         </div>
 
-        {/* Lead Quotes Card */}
+        {/* Lead Quotes Card (unchanged) */}
         <div className="dashboard-card">
           <div className="card-header">
             <span className="card-title">Lead Quotes</span>
@@ -53,7 +109,7 @@ const InvoiceCard = () => {
           </div>
         </div>
 
-        {/* Unpaid Card */}
+        {/* Unpaid Card (unchanged) */}
         <div className="dashboard-card">
           <div className="card-header">
             <span className="card-title">Unpaid</span>
@@ -69,7 +125,7 @@ const InvoiceCard = () => {
         </div>
       </div>
 
-      {/* Table Section */}
+      {/* Table Section (unchanged) */}
       <div className="table-section">
         <h3 className="section-title">Quotes Overview</h3>
         <table className="data-table">
@@ -115,7 +171,7 @@ const InvoiceCard = () => {
         </table>
       </div>
 
-      {/* Progress Section */}
+      {/* Progress Section (unchanged) */}
       <div className="progress-section">
         <h3 className="section-title">Customer Analytics</h3>
         <div className="progress-container">
