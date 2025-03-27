@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { ref, push, set, get } from "firebase/database";
 import { db } from "./firebase";
 import Swal from "sweetalert2";
@@ -10,11 +10,11 @@ const NewInvoiceForm = ({ onSave, onClose, customers = [] }) => {
   const [invoice, setInvoice] = useState({
     number: "",
     clientId: "",
-    companyId: "", 
-    productId: "", 
-    personId: "", 
-    date: today, 
-    expireDate: today, 
+    companyId: "",
+    productIds: [],
+    personId: "",
+    date: today,
+    expireDate: today,
     total: "",
     status: "Draft",
     createdBy: "",
@@ -23,6 +23,8 @@ const NewInvoiceForm = ({ onSave, onClose, customers = [] }) => {
   const [products, setProducts] = useState([]);
   const [companies, setCompanies] = useState([]);
   const [people, setPeople] = useState([]);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -69,8 +71,34 @@ const NewInvoiceForm = ({ onSave, onClose, customers = [] }) => {
     fetchPeople();
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   const handleChange = (e) => {
     setInvoice({ ...invoice, [e.target.name]: e.target.value });
+  };
+
+  const toggleDropdown = () => {
+    setDropdownOpen((prev) => !prev);
+  };
+
+  const handleProductSelection = (productId) => {
+    setInvoice((prevInvoice) => {
+      const updatedProducts = prevInvoice.productIds.includes(productId)
+        ? prevInvoice.productIds.filter((id) => id !== productId)
+        : [...prevInvoice.productIds, productId];
+      return { ...prevInvoice, productIds: updatedProducts };
+    });
   };
 
   const handleSave = () => {
@@ -78,7 +106,7 @@ const NewInvoiceForm = ({ onSave, onClose, customers = [] }) => {
       !invoice.number.trim() ||
       !invoice.clientId.trim() ||
       !invoice.companyId.trim() ||
-      !invoice.productId.trim() ||
+      invoice.productIds.length === 0 ||
       !invoice.personId.trim() ||
       !invoice.date.trim() ||
       !invoice.expireDate.trim() ||
@@ -131,13 +159,24 @@ const NewInvoiceForm = ({ onSave, onClose, customers = [] }) => {
           ))}
         </select>
 
-        <label>Product *</label>
-        <select name="productId" value={invoice.productId} onChange={handleChange}>
-          <option value="">Select Product</option>
-          {products.map((product) => (
-            <option key={product.id} value={product.id}>{product.name}</option>
-          ))}
-        </select>
+        <label>Products *</label>
+        <div className="dropdown" ref={dropdownRef}>
+          <button type="button" className="dropdown-toggle" onClick={toggleDropdown}>
+            {invoice.productIds.length > 0 ? `${invoice.productIds.length} selected` : "Select Products"}
+          </button>
+          <div className={`dropdown-menu ${dropdownOpen ? "show" : ""}`}>
+            {products.map((product) => (
+              <label key={product.id} className="dropdown-item">
+                <input
+                  type="checkbox"
+                  checked={invoice.productIds.includes(product.id)}
+                  onChange={() => handleProductSelection(product.id)}
+                />
+                {product.name}
+              </label>
+            ))}
+          </div>
+        </div>
 
         <label>Person *</label>
         <select name="personId" value={invoice.personId} onChange={handleChange}>

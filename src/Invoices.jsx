@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Table, Button, Modal, Input } from "antd";
-import { SearchOutlined } from "@ant-design/icons";
+import { Table, Button, Modal, Input, Dropdown, Menu } from "antd";
+import { SearchOutlined, DownOutlined } from "@ant-design/icons";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import NewInvoiceForm from "./NewInvoiceForm";
@@ -15,7 +15,6 @@ const InvoiceList = () => {
   const [customers, setCustomers] = useState({});
   const [customerOptions, setCustomerOptions] = useState([]);
   const [products, setProducts] = useState({});
-  const [productOptions, setProductOptions] = useState([]);
   const [companies, setCompanies] = useState({});
   const [companyOptions, setCompanyOptions] = useState([]);
   const [people, setPeople] = useState({});
@@ -42,7 +41,7 @@ const InvoiceList = () => {
     };
     
     fetchData("customers", setCustomers, setCustomerOptions);
-    fetchData("products", setProducts, setProductOptions);
+    fetchData("products", setProducts, () => {});
     fetchData("companies", setCompanies, setCompanyOptions);
     fetchData("people", setPeople, setPeopleOptions);
   }, []);
@@ -56,7 +55,7 @@ const InvoiceList = () => {
           id: key,
           client: customers[data[key].clientId]?.name || "Unknown Client",
           company: companies[data[key].companyId]?.name || "Unknown Company",
-          product: products[data[key].productId]?.name || "Unknown Product",
+          products: data[key].productIds?.map((id) => products[id]?.name || "Unknown Product") || ["Unknown Product"],
           person: people[data[key].personId]?.name || "Unknown Person",
           ...data[key],
         }));
@@ -77,7 +76,7 @@ const InvoiceList = () => {
         ? invoices.filter(
             (invoice) =>
               invoice.client.toLowerCase().includes(value) ||
-              invoice.product.toLowerCase().includes(value) ||
+              invoice.products.some((product) => product.toLowerCase().includes(value)) ||
               invoice.company.toLowerCase().includes(value) ||
               invoice.person.toLowerCase().includes(value)
           )
@@ -90,12 +89,12 @@ const InvoiceList = () => {
     doc.text("Invoice List", 14, 10);
     autoTable(doc, {
       startY: 20,
-      head: [["Number", "Client", "Company", "Product", "Person", "Date", "Invoice Date", "Total", "Status", "Created By"]],
+      head: [["Number", "Client", "Company", "Products", "Person", "Date", "Invoice Date", "Total", "Status", "Created By"]],
       body: filteredInvoices.map((invoice) => [
         invoice.number,
         invoice.client,
         invoice.company,
-        invoice.product,
+        invoice.products.join(", "),
         invoice.person,
         invoice.date,
         invoice.expireDate,
@@ -111,7 +110,22 @@ const InvoiceList = () => {
     { title: "Number", dataIndex: "number", key: "number" },
     { title: "Client", dataIndex: "client", key: "client" },
     { title: "Company", dataIndex: "company", key: "company" },
-    { title: "Product", dataIndex: "product", key: "product" },
+    { 
+      title: "Products", 
+      dataIndex: "products", 
+      key: "products", 
+      render: (products) => (
+        <Dropdown overlay={
+          <Menu>
+            {products.map((product, index) => (
+              <Menu.Item key={index}>{product}</Menu.Item>
+            ))}
+          </Menu>
+        }>
+          <Button>{products.length > 1 ? "Multiple Products" : products[0]} <DownOutlined /></Button>
+        </Dropdown>
+      )
+    },
     { title: "Person", dataIndex: "person", key: "person" },
     { title: "Date", dataIndex: "date", key: "date" },
     { title: "Invoice Date", dataIndex: "expireDate", key: "expireDate" },
@@ -133,26 +147,15 @@ const InvoiceList = () => {
             value={searchText}
             onChange={handleSearch}
           />
-          <Button type="primary" onClick={generatePDF}>
-            Export to PDF
-          </Button>
-          <Button type="primary" onClick={() => setIsModalOpen(true)}>
-            + Add New Invoice
-          </Button>
+          <Button type="primary" onClick={generatePDF}>Export to PDF</Button>
+          <Button type="primary" onClick={() => setIsModalOpen(true)}>+ Add New Invoice</Button>
         </div>
       </div>
 
       <Table columns={columns} dataSource={filteredInvoices} rowKey="id" locale={{ emptyText: "No data" }} />
 
       <Modal title="New Invoice" open={isModalOpen} onCancel={() => setIsModalOpen(false)} footer={null} width={800}>
-        <NewInvoiceForm
-          onSave={() => {}}
-          onClose={() => setIsModalOpen(false)}
-          customers={customerOptions}
-          products={productOptions}
-          companies={companyOptions}
-          people={peopleOptions}
-        />
+        <NewInvoiceForm onSave={() => {}} onClose={() => setIsModalOpen(false)} customers={customerOptions} companies={companyOptions} people={peopleOptions} />
       </Modal>
     </div>
   );
