@@ -60,12 +60,12 @@ const Customers = ({ onSelectCustomer }) => {
       <main className="flex-grow-1 ms-5 p-4" style={{ marginLeft: "270px" }}>
         <div className="bg-white p-4 shadow rounded">
           <div className="d-flex justify-content-between align-items-center mb-3">
-            <h2 className="fs-3 fw-bold">Customer List</h2>
+            <h2 className="fs-3 fw-bold">Clients List</h2>
             <button
               className="btn btn-primary"
               onClick={() => setIsFormOpen(true)}
             >
-              Add Customer
+              Add Clients
             </button>
           </div>
 
@@ -119,7 +119,7 @@ const Customers = ({ onSelectCustomer }) => {
             className="btn-close position-absolute top-2 end-2"
             onClick={() => setIsFormOpen(false)}
           ></button>
-          <h2 className="fs-3 fw-bold mb-3">Add New Customer</h2>
+          <h2 className="fs-3 fw-bold mb-3">Add New Clients</h2>
 
           <form className="row g-3" onSubmit={handleSubmit}>
             {[

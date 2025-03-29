@@ -3,15 +3,65 @@ import './Dashboard.css';
 import { FiDollarSign, FiUsers, FiFileText, FiClock } from 'react-icons/fi';
 import { BsArrowUpRight, BsArrowDownRight } from 'react-icons/bs';
 import { ref, onValue } from 'firebase/database';
-import { db } from './firebase'; // Make sure this path is correct
+import { db } from './firebase';
 
 const InvoiceCard = () => {
   const [invoiceData, setInvoiceData] = useState({
     count: 0,
     totalAmount: 0,
+    loading: true,
+    statusCounts: {
+      paid: 0,
+      pending: 0,
+      draft: 0
+    }
+  });
+
+  const [leadsData, setLeadsData] = useState({
+    count: 0,
     loading: true
   });
 
+  const [customersData, setCustomersData] = useState({
+    count: 0,
+    loading: true
+  });
+  const [customLeadsData, setCustomLeadsData] = useState({
+    onProcess: 0,
+    complete: 0,
+    cancelled: 0,
+    loading: true
+  });
+  
+  // Fetch custom leads data
+  useEffect(() => {
+    const fetchCustomLeads = () => {
+      const customLeadsRef = ref(db, 'custom_leads');
+      onValue(customLeadsRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          const leadsList = Object.values(data);
+          setCustomLeadsData({
+            onProcess: leadsList.filter(lead => lead.lead_status === 'onprocess').length,
+            complete: leadsList.filter(lead => lead.lead_status === 'complete').length,
+            cancelled: leadsList.filter(lead => lead.lead_status === 'cancelled').length,
+            loading: false
+          });
+        } else {
+          setCustomLeadsData({
+            onProcess: 0,
+            complete: 0,
+            cancelled: 0,
+            loading: false
+          });
+        }
+      });
+    };
+  
+    fetchCustomLeads();
+  }, []);
+
+  // Fetch invoices and calculate status counts
   useEffect(() => {
     const fetchInvoices = () => {
       const invoicesRef = ref(db, 'invoices');
@@ -23,28 +73,73 @@ const InvoiceCard = () => {
             return sum + (parseFloat(invoice.total) || 0);
           }, 0);
           
+          // Calculate status counts
+          const statusCounts = {
+            paid: invoiceList.filter(invoice => invoice.status === 'Paid').length,
+            pending: invoiceList.filter(invoice => invoice.status === 'Pending').length,
+            draft: invoiceList.filter(invoice => invoice.status === 'Draft').length
+          };
+  
           setInvoiceData({
             count: invoiceList.length,
             totalAmount: total,
-            loading: false
+            loading: false,
+            statusCounts
           });
         } else {
           setInvoiceData({
             count: 0,
             totalAmount: 0,
-            loading: false
+            loading: false,
+            statusCounts: {
+              paid: 0,
+              pending: 0,
+              draft: 0
+            }
           });
         }
       });
     };
-
+  
     fetchInvoices();
   }, []);
 
+  // Fetch leads
+  useEffect(() => {
+    const fetchLeads = () => {
+      const leadsRef = ref(db, 'leads');
+      onValue(leadsRef, (snapshot) => {
+        const data = snapshot.val();
+        setLeadsData({
+          count: data ? Object.keys(data).length : 0,
+          loading: false
+        });
+      });
+    };
+
+    fetchLeads();
+  }, []);
+
+  // Fetch customers
+  useEffect(() => {
+    const fetchCustomers = () => {
+      const customersRef = ref(db, 'customers');
+      onValue(customersRef, (snapshot) => {
+        const data = snapshot.val();
+        setCustomersData({
+          count: data ? Object.keys(data).length : 0,
+          loading: false
+        });
+      });
+    };
+
+    fetchCustomers();
+  }, []);
+
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'INR',
       minimumFractionDigits: 2
     }).format(amount);
   };
@@ -56,9 +151,9 @@ const InvoiceCard = () => {
         {/* Invoice Count Card */}
         <div className="dashboard-card">
           <div className="card-header">
-            <span className="card-title"> Total Invoices</span>
+            <span className="card-title">Total Invoices</span>
             <div className="card-icon" style={{ color: 'var(--primary)', backgroundColor: 'rgba(66, 42, 251, 0.1)' }}>
-            <FiUsers size={18} />
+              <FiUsers size={18} />
             </div>
           </div>
           <div className="card-value">
@@ -73,128 +168,155 @@ const InvoiceCard = () => {
         {/* Invoice Total Card */}
         <div className="dashboard-card">
           <div className="card-header">
-            <span className="card-title">TotalInvoices ⟨₹⟩ </span>
+            <span className="card-title">Total Invoices ⟨₹⟩</span>
             <div className="card-icon" style={{ color: '#6A00F4', backgroundColor: 'rgba(106, 0, 244, 0.1)' }}>
               <FiUsers size={18} />
             </div>
           </div>
           <div className="card-value">
-  {invoiceData.loading ? '...' : (
-    <span>
-      ₹{invoiceData.totalAmount.toLocaleString('en-IN', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      })}
-    </span>
-  )}
-</div>
+            {invoiceData.loading ? '...' : (
+              <span>
+                ₹{invoiceData.totalAmount.toLocaleString('en-IN', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2
+                })}
+              </span>
+            )}
+          </div>
           <div className="card-footer">
             <BsArrowUpRight className="trend-up" />
             <span style={{ marginLeft: 4 }}>This Month</span>
           </div>
         </div>
 
-        {/* Lead Quotes Card (unchanged) */}
+        {/* Leads Count Card */}
         <div className="dashboard-card">
           <div className="card-header">
-            <span className="card-title">Lead Quotes</span>
+            <span className="card-title">Total Leads</span>
             <div className="card-icon" style={{ color: 'var(--success)', backgroundColor: 'rgba(5, 205, 153, 0.1)' }}>
               <FiFileText size={18} />
             </div>
           </div>
-          <div className="card-value">$0.00</div>
+          <div className="card-value">
+            {leadsData.loading ? '...' : leadsData.count}
+          </div>
           <div className="card-footer">
             <BsArrowDownRight className="trend-down" />
             <span style={{ marginLeft: 4 }}>This Month</span>
           </div>
         </div>
 
-        {/* Unpaid Card (unchanged) */}
+        {/* Customers Count Card */}
         <div className="dashboard-card">
           <div className="card-header">
-            <span className="card-title">Unpaid</span>
+            <span className="card-title">Total Clients </span>
             <div className="card-icon" style={{ color: 'var(--danger)', backgroundColor: 'rgba(255, 84, 112, 0.1)' }}>
-              <FiClock size={18} />
+              <FiUsers size={18} />
             </div>
           </div>
-          <div className="card-value">$0.00</div>
+          <div className="card-value">
+            {customersData.loading ? '...' : customersData.count}
+          </div>
           <div className="card-footer">
-            <BsArrowDownRight className="trend-down" />
-            <span style={{ marginLeft: 4 }}>Not Paid</span>
+            <BsArrowUpRight className="trend-up" />
+            <span style={{ marginLeft: 4 }}>Active</span>
           </div>
         </div>
       </div>
 
-      {/* Table Section (unchanged) */}
+      {/* Table Section with Real-time Invoice Status */}
       <div className="table-section">
-        <h3 className="section-title">Quotes Overview</h3>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Invoices</th>
-              <th>Customer Quotes</th>
-              <th>Lead Quotes</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><span className="status-badge" style={{ background: 'rgba(66, 42, 251, 0.1)', color: 'var(--primary)' }}>Draft 0%</span></td>
-              <td><span className="status-badge" style={{ background: 'rgba(66, 42, 251, 0.1)', color: 'var(--primary)' }}>Draft 0%</span></td>
-              <td><span className="status-badge" style={{ background: 'rgba(66, 42, 251, 0.1)', color: 'var(--primary)' }}>Draft 0%</span></td>
-            </tr>
-            <tr>
-              <td><span className="status-badge" style={{ background: 'rgba(255, 212, 102, 0.1)', color: 'var(--warning)' }}>Pending 0%</span></td>
-              <td><span className="status-badge" style={{ background: 'rgba(255, 212, 102, 0.1)', color: 'var(--warning)' }}>Pending 0%</span></td>
-              <td><span className="status-badge" style={{ background: 'rgba(255, 212, 102, 0.1)', color: 'var(--warning)' }}>Pending 0%</span></td>
-            </tr>
-            <tr>
-              <td><span className="status-badge" style={{ background: 'rgba(255, 84, 112, 0.1)', color: 'var(--danger)' }}>Unpaid 0%</span></td>
-              <td><span className="status-badge" style={{ background: 'rgba(131, 217, 255, 0.1)', color: 'var(--secondary)' }}>Sent 0%</span></td>
-              <td><span className="status-badge" style={{ background: 'rgba(131, 217, 255, 0.1)', color: 'var(--secondary)' }}>Sent 0%</span></td>
-            </tr>
-            <tr>
-              <td><span className="status-badge" style={{ background: 'rgba(255, 84, 112, 0.1)', color: 'var(--danger)' }}>Overdue 0%</span></td>
-              <td><span className="status-badge" style={{ background: 'rgba(255, 84, 112, 0.1)', color: 'var(--danger)' }}>Declined 0%</span></td>
-              <td><span className="status-badge" style={{ background: 'rgba(255, 84, 112, 0.1)', color: 'var(--danger)' }}>Declined 0%</span></td>
-            </tr>
-            <tr>
-              <td><span className="status-badge" style={{ background: 'rgba(5, 205, 153, 0.1)', color: 'var(--success)' }}>Partially 0%</span></td>
-              <td><span className="status-badge" style={{ background: 'rgba(5, 205, 153, 0.1)', color: 'var(--success)' }}>Accepted 0%</span></td>
-              <td><span className="status-badge" style={{ background: 'rgba(5, 205, 153, 0.1)', color: 'var(--success)' }}>Accepted 0%</span></td>
-            </tr>
-            <tr>
-              <td><span className="status-badge" style={{ background: 'rgba(5, 205, 153, 0.1)', color: 'var(--success)' }}>Paid 0%</span></td>
-              <td><span className="status-badge" style={{ background: 'rgba(163, 174, 208, 0.1)', color: 'var(--gray)' }}>Expired 0%</span></td>
-              <td><span className="status-badge" style={{ background: 'rgba(163, 174, 208, 0.1)', color: 'var(--gray)' }}>Expired 0%</span></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+  <h3 className="section-title">Quotes Overview</h3>
+  <table className="data-table">
+    <thead>
+      <tr>
+        <th>Invoices</th>
+        <th>Custom Leads</th>
+        <th>Lead Quotes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <span className="status-badge" style={{ background: 'rgba(66, 42, 251, 0.1)', color: 'var(--primary)' }}>
+            Draft ({invoiceData.statusCounts.draft})
+          </span>
+        </td>
+        <td>
+          <span className="status-badge" style={{ background: 'rgba(66, 42, 251, 0.1)', color: 'var(--primary)' }}>
+            On Process ({customLeadsData.onProcess || 0})
+          </span>
+        </td>
+        <td>
+          <span className="status-badge" style={{ background: 'rgba(66, 42, 251, 0.1)', color: 'var(--primary)' }}>
+            Draft (0)
+          </span>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <span className="status-badge" style={{ background: 'rgba(255, 212, 102, 0.1)', color: 'var(--warning)' }}>
+            Pending ({invoiceData.statusCounts.pending})
+          </span>
+        </td>
+        <td>
+          <span className="status-badge" style={{ background: 'rgba(5, 205, 153, 0.1)', color: 'var(--success)' }}>
+            Complete ({customLeadsData.complete || 0})
+          </span>
+        </td>
+        <td>
+          <span className="status-badge" style={{ background: 'rgba(255, 212, 102, 0.1)', color: 'var(--warning)' }}>
+            Pending (0)
+          </span>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <span className="status-badge" style={{ background: 'rgba(5, 205, 153, 0.1)', color: 'var(--success)' }}>
+            Paid ({invoiceData.statusCounts.paid})
+          </span>
+        </td>
+        <td>
+          <span className="status-badge" style={{ background: 'rgba(255, 84, 112, 0.1)', color: 'var(--danger)' }}>
+            Cancelled ({customLeadsData.cancelled || 0})
+          </span>
+        </td>
+        <td>
+          <span className="status-badge" style={{ background: 'rgba(5, 205, 153, 0.1)', color: 'var(--success)' }}>
+            Accepted (0)
+          </span>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
 
-      {/* Progress Section (unchanged) */}
+      {/* Progress Section */}
       <div className="progress-section">
-        <h3 className="section-title">Customer Analytics</h3>
-        <div className="progress-container">
-          <div className="circular-progress">
-            <svg className="progress-circle" viewBox="0 0 100 100">
-              <circle className="progress-bg" cx="50" cy="50" r="45" />
-              <circle className="progress-fill" cx="50" cy="50" r="45" strokeDasharray="283" strokeDashoffset="283" />
-            </svg>
-            <div className="progress-text">0%</div>
-          </div>
-          <p className="progress-label">New Customers This Month</p>
-          <div style={{ display: 'flex', gap: '40px', marginTop: '20px' }}>
-            <div className="stats-item">
-              <div className="stats-value">0</div>
-              <div className="stats-label">Active Customers</div>
-            </div>
-            <div className="stats-item">
-              <div className="stats-value">0%</div>
-              <div className="stats-label">Conversion Rate</div>
-            </div>
-          </div>
+  <h3 className="section-title">Clients Analytics</h3>
+  <div className="progress-container">
+    <div className="circular-progress">
+      <svg className="progress-circle" viewBox="0 0 100 100">
+        <circle className="progress-bg" cx="50" cy="50" r="45" />
+        <circle className="progress-fill" cx="50" cy="50" r="45" strokeDasharray="450" strokeDashoffset="300" />
+      </svg>
+      <div className="progress-text">50%</div>
+    </div>
+    <p className="progress-label">New Clients This Month</p>
+    <div style={{ display: 'flex', gap: '40px', marginTop: '20px' }}>
+      <div className="stats-item">
+        <div className="stats-value">
+          {customersData.loading ? '...' : customersData.count}
         </div>
+        <div className="stats-label">Total Clients</div>
       </div>
+      <div className="stats-item">
+        <div className="stats-value">50%</div>
+        <div className="stats-label">Conversion Rate</div>
+      </div>
+    </div>
+  </div>
+</div>
     </div>
   );
 };
