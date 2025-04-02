@@ -12,8 +12,13 @@ const availableFields = [
   { name: "pincode", label: "Pincode", type: "text", icon: "map-pin" },
   { name: "city", label: "City", type: "text", icon: "building" },
   { name: "id", label: "ID", type: "text", icon: "id-card" },
-  { name: "leadstatus", label: "Lead Status", type: "dropdown", 
-    options: ["On Process", "Complete", "Cancelled"], icon: "chart-line" }
+  { 
+    name: "leadstatus", 
+    label: "Lead Status", 
+    type: "dropdown", 
+    options: ["OnProcess", "Complete", "Cancelled"], // Removed space
+    icon: "chart-line" 
+  }
 ];
 
 const CustomForm = () => {
@@ -24,7 +29,7 @@ const CustomForm = () => {
   // Fetch data from Firebase on component mount
   useEffect(() => {
     const leadsRef = ref(db, "custom_leads");
-    onValue(leadsRef, (snapshot) => {
+    const unsubscribe = onValue(leadsRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
         const leadsArray = Object.keys(data).map((key) => ({
@@ -36,12 +41,16 @@ const CustomForm = () => {
         setLeads([]);
       }
     });
+    return () => unsubscribe();
   }, []);
 
   const handleAddField = (field) => {
     if (!selectedFields.some((f) => f.name === field.name)) {
       setSelectedFields((prevFields) => [...prevFields, field]);
-      setFormData((prevData) => ({ ...prevData, [field.name]: "" }));
+      setFormData((prevData) => ({ 
+        ...prevData, 
+        [field.name]: field.type === "dropdown" ? field.options[0] : "" 
+      }));
     }
   };
 
@@ -55,20 +64,30 @@ const CustomForm = () => {
   };
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setFormData({ 
+      ...formData, 
+      [e.target.name]: e.target.value 
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await push(ref(db, "custom_leads"), formData);
+      // Ensure leadstatus is properly set
+      const submissionData = {
+        ...formData,
+        leadstatus: formData.leadstatus || "OnProcess" // Default value if not set
+      };
+      
+      await push(ref(db, "custom_leads"), submissionData);
       Swal.fire({
         title: "Success!",
         text: "Custom Lead added successfully!",
         icon: "success"
       });
-      setFormData({}); // Clear form data after submission
+      setFormData({});
     } catch (error) {
+      console.error("Submission error:", error);
       Swal.fire("Error!", "Failed to add custom lead.", "error");
     }
   };
@@ -105,7 +124,7 @@ const CustomForm = () => {
         <div className="form-scroll-container">
           <form onSubmit={handleSubmit} className="form-content">
             <div className="form-group">
-              {selectedFields.map((field, index) => (
+              {selectedFields.map((field) => (
                 <div key={field.name} className="field-container">
                   <label className="input-label">
                     <i className={`fas fa-${field.icon} me-2`}></i>
@@ -116,11 +135,14 @@ const CustomForm = () => {
                       <select
                         name={field.name}
                         className="form-input"
+                        value={formData[field.name] || field.options[0]}
                         onChange={handleChange}
                         required
                       >
                         {field.options.map((option) => (
-                          <option key={option} value={option}>{option}</option>
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
                         ))}
                       </select>
                     ) : (
@@ -128,6 +150,7 @@ const CustomForm = () => {
                         type={field.type}
                         name={field.name}
                         className="form-input"
+                        value={formData[field.name] || ""}
                         onChange={handleChange}
                         required
                       />
@@ -161,9 +184,9 @@ const CustomForm = () => {
           {leads.length > 0 ? (
             leads.map((lead) => (
               <div key={lead.id} className="lead-item">
-                {Object.keys(lead).map((key) => (
+                {Object.entries(lead).map(([key, value]) => (
                   <p key={key}>
-                    <strong>{key}:</strong> {lead[key]}
+                    <strong>{key}:</strong> {value || "Not set"}
                   </p>
                 ))}
               </div>

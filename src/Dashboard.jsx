@@ -34,32 +34,43 @@ const InvoiceCard = () => {
   });
   
   // Fetch custom leads data
-  useEffect(() => {
-    const fetchCustomLeads = () => {
-      const customLeadsRef = ref(db, 'custom_leads');
-      onValue(customLeadsRef, (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-          const leadsList = Object.values(data);
-          setCustomLeadsData({
-            onProcess: leadsList.filter(lead => lead.lead_status === 'onprocess').length,
-            complete: leadsList.filter(lead => lead.lead_status === 'complete').length,
-            cancelled: leadsList.filter(lead => lead.lead_status === 'cancelled').length,
-            loading: false
-          });
-        } else {
-          setCustomLeadsData({
-            onProcess: 0,
-            complete: 0,
-            cancelled: 0,
-            loading: false
-          });
-        }
-      });
-    };
-  
-    fetchCustomLeads();
-  }, []);
+// Fetch custom leads data - CORRECTED VERSION
+// Fetch custom leads data - UPDATED VERSION
+useEffect(() => {
+  const fetchCustomLeads = () => {
+    const customLeadsRef = ref(db, 'custom_leads');
+    const unsubscribe = onValue(customLeadsRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const leadsList = Object.values(data);
+        setCustomLeadsData({
+          onProcess: leadsList.filter(lead => 
+            lead.leadstatus && lead.leadstatus.toLowerCase().includes('process')
+          ).length,
+          complete: leadsList.filter(lead => 
+            lead.leadstatus && lead.leadstatus.toLowerCase() === 'complete'
+          ).length,
+          cancelled: leadsList.filter(lead => 
+            lead.leadstatus && lead.leadstatus.toLowerCase() === 'cancelled'
+          ).length,
+          loading: false
+        });
+      } else {
+        setCustomLeadsData({
+          onProcess: 0,
+          complete: 0,
+          cancelled: 0,
+          loading: false
+        });
+      }
+    });
+    
+    // Cleanup function
+    return () => unsubscribe();
+  };
+
+  fetchCustomLeads();
+}, []);
 
   // Fetch invoices and calculate status counts
   useEffect(() => {
