@@ -1,33 +1,84 @@
+/* Original styles (unchanged) */
 .admin-container {
-    margin-left: 250px; /* Adjust based on sidebar width */
-    padding: 20px;
-    width: calc(100% - 250px); /* Ensure it takes remaining space */
+  margin-left: 250px; /* Adjust based on sidebar width */
+  padding: 20px;
+  width: calc(100% - 250px); /* Ensure it takes remaining space */
+}
+
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.admin-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.search-input {
+  width: 200px;
+}
+
+.refresh-btn,
+.add-admin-btn {
+  font-weight: bold;
+}
+
+@media (max-width: 768px) {
+  .admin-container {
+      margin-left: 0;
+      width: 100%;
   }
+}
+
+/* Enhanced responsive additions (won't affect desktop) */
+@media (max-width: 992px) {
   .admin-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 15px;
   }
   
   .admin-actions {
-    display: flex;
-    gap: 10px;
+      width: 100%;
+      justify-content: space-between;
   }
   
   .search-input {
-    width: 200px;
+      width: 100%;
+      max-width: 300px;
+  }
+}
+
+@media (max-width: 576px) {
+  .admin-container {
+      padding: 15px 10px;
+  }
+  
+  .admin-actions {
+      flex-direction: column;
+      gap: 8px;
+  }
+  
+  .search-input {
+      max-width: 100%;
   }
   
   .refresh-btn,
   .add-admin-btn {
-    font-weight: bold;
-  }
-  
-  @media (max-width: 768px) {
-    .admin-container {
-      margin-left: 0;
       width: 100%;
-    }
+  }
+}
+
+/* Tablet landscape optimization */
+@media (min-width: 577px) and (max-width: 768px) {
+  .admin-actions {
+      flex-wrap: wrap;
   }
   
+  .search-input {
+      min-width: 200px;
+  }
+}

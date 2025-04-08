@@ -6,6 +6,7 @@ import autoTable from "jspdf-autotable";
 import NewInvoiceForm from "./NewInvoiceForm";
 import { ref, onValue } from "firebase/database";
 import { db } from "./firebase";
+import "./invoice-list.css"
 
 const InvoiceList = () => {
   const [invoices, setInvoices] = useState([]);

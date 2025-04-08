@@ -1,0 +1,61 @@
+/* Fix for desktop view spacing */
+#root > div > div[style*="flex-grow: 1"] > div[style*="max-width: 1200px"] {
+    margin-left: 0 !important;
+    padding: 16px !important;
+    max-width: calc(100% - 16px) !important;
+    transition: all 0.3s ease;
+  }
+  
+  /* Hamburger menu fixes */
+  .hamburger {
+    position: fixed !important;
+    top: 15px !important;
+    left: 15px !important;
+    z-index: 1050 !important;
+    background: white !important;
+    padding: 10px !important;
+    border-radius: 5px !important;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
+    display: block !important;
+  }
+  
+  /* Sidebar adjustments */
+  .sidebar {
+    transition: transform 0.3s ease !important;
+    z-index: 1040 !important;
+  }
+  
+  /* Responsive behavior */
+  @media (min-width: 769px) {
+    .hamburger {
+      display: none !important;
+    }
+    
+    .sidebar {
+      transform: translateX(0) !important;
+    }
+    
+    #root > div > div[style*="flex-grow: 1"] > div[style*="max-width: 1200px"] {
+      margin-left: 250px !important;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .sidebar {
+      transform: translateX(-100%) !important;
+    }
+    
+    .sidebar.open {
+      transform: translateX(0) !important;
+    }
+    
+    /* Mobile table adjustments */
+    .ant-table {
+      font-size: 13px !important;
+    }
+    
+    .ant-table-thead > tr > th,
+    .ant-table-tbody > tr > td {
+      padding: 6px 8px !important;
+    }
+  }

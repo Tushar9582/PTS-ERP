@@ -1,24 +1,49 @@
 .main-container {
-    display: flex;
-    justify-content: center; /* Center the content */
-    align-items: flex-start;
-    margin-left: 260px; /* Adjust to prevent sidebar overlap */
-    padding-top: 20px;
-    width: calc(100% - 260px); /* Ensure it doesn't take full width */
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  margin-left: 260px;
+  padding-top: 20px;
+  width: calc(100% - 260px);
+}
+
+.report-container {
+  width: 85%;
+  max-width: 1200px;
+}
+
+.card {
+  border-radius: 10px;
+}
+/* Mobile responsive additions (won't affect desktop) */
+@media (max-width: 992px) {
+  .main-container {
+      margin-left: 0;
+      width: 100%;
+      padding: 15px;
+      flex-direction: column;
   }
   
   .report-container {
-    width: 85%; /* Reduce width to keep it centered */
-    max-width: 1200px;
+      width: 100%;
+      max-width: 100%;
   }
   
-  .card {
-    border-radius: 10px;
-  }
+  /* Optional: Adjust card styles for mobile */
   .modern-card {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      backdrop-filter: blur(5px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
   }
-    
+}
+
+/* Tablet responsive adjustments */
+@media (min-width: 993px) and (max-width: 1200px) {
+  .main-container {
+      margin-left: 200px;
+      width: calc(100% - 200px);
+  }
+  
+  .report-container {
+      width: 90%;
+  }
+}

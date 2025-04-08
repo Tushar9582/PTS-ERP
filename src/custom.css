@@ -135,3 +135,98 @@
   border-radius: 5px;
   background: #f9f9f9;
 }
+
+/* New responsive additions */
+@media (max-width: 1200px) {
+  .content-container {
+    flex-direction: column;
+    margin-left: 0;
+    padding: 15px;
+    gap: 15px;
+  }
+  
+  .form-container,
+  .data-container {
+    width: 100%;
+  }
+  
+  .form-container {
+    margin-bottom: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .content-container {
+    padding: 10px;
+    gap: 10px;
+  }
+  
+  .form-container,
+  .data-container {
+    padding: 1.5rem;
+  }
+  
+  .form-title {
+    font-size: 1.3rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .form-input,
+  .btn-add-field,
+  .btn-remove-field,
+  .btn-submit {
+    padding: 0.6rem;
+  }
+  
+  .form-scroll-container {
+    padding: 1rem;
+  }
+  
+  .lead-item {
+    padding: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .form-container {
+    padding: 1rem;
+  }
+  
+  .data-container {
+    padding: 1rem;
+  }
+  
+  .btn-submit {
+    padding: 0.8rem;
+  }
+  
+  .form-group {
+    flex-direction: column;
+  }
+  
+  .input-label {
+    margin-bottom: 0.3rem;
+  }
+}
+
+/* Remove unwanted space from screenshot */
+.leads-list {
+  gap: 0; /* Removes the vertical gap between lead items */
+}
+
+.lead-item {
+  margin-bottom: 0; /* Removes bottom margin */
+  border-radius: 0; /* Remove individual rounding */
+  border-bottom: none; /* Remove double borders */
+}
+
+.leads-list > .lead-item:first-child {
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px;
+}
+
+.leads-list > .lead-item:last-child {
+  border-bottom-left-radius: 5px;
+  border-bottom-right-radius: 5px;
+  border-bottom: 1px solid #ddd;
+}
