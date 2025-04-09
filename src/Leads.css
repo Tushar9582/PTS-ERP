@@ -1,39 +1,140 @@
+.responsive-container {
+  min-height: 100vh;
+  background-color: #f8f9fa;
+  margin-left: 220px;
+}
+
 .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-content .table-container {
+  overflow-y: auto;
+  max-height: 65vh;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+}
+
+.table {
+  margin-bottom: 0;
+}
+
+.table thead th {
+  position: sticky;
+  top: 0;
+  background-color: #f8f9fa;
+  z-index: 1;
+}
+
+.table-hover tbody tr:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.form-control {
+  border: 1px solid #ced4da;
+}
+
+.btn-success {
+  background-color: #28a745;
+  border-color: #28a745;
+}
+
+.btn-success:hover {
+  background-color: #218838;
+  border-color: #1e7e34;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 992px) {
+  .responsive-container {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  main {
+    padding: 1rem !important;
+  }
+
+  .table-responsive {
+    border: 0;
+  }
+
+  .table thead {
+    display: none;
+  }
+
+  .table tr {
+    display: block;
+    margin-bottom: 1rem;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+  }
+
+  .table td {
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
     align-items: center;
-    z-index: 1000;
+    padding: 0.5rem;
+    border-bottom: 1px solid #dee2e6;
   }
-  
+
+  .table td:before {
+    content: attr(data-label);
+    font-weight: bold;
+    margin-right: 1rem;
+  }
+
+  .table td:last-child {
+    border-bottom: 0;
+  }
+
+  .table td[data-label="#"]:before {
+    content: "ID";
+  }
+
   .modal-content {
-    background-color: white;
-    padding: 2rem;
-    border-radius: 8px;
+    padding: 1rem;
+    max-height: 95vh;
+  }
+}
+
+@media (max-width: 576px) {
+  .modal-content {
     width: 100%;
-    max-width: 500px;
-    position: relative;
+    margin: 0;
+    border-radius: 0;
   }
-  
-  .table-hover tbody tr:hover {
-    background-color: rgba(0, 0, 0, 0.05);
+
+  .btn {
+    font-size: 0.875rem;
+    padding: 0.375rem 0.5rem;
   }
-  
-  .form-control {
-    border: 1px solid #ced4da;
+
+  .d-flex.gap-2 > .btn {
+    flex: 1 0 100%;
+    margin-bottom: 0.5rem;
   }
-  
-  .btn-success {
-    background-color: #28a745;
-    border-color: #28a745;
-  }
-  
-  .btn-success:hover {
-    background-color: #218838;
-    border-color: #1e7e34;
-  }
+}
