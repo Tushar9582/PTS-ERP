@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { db } from "./firebase";
 import { ref, push, onValue } from "firebase/database";
 import Swal from "sweetalert2";
+import { DarkModeContext } from "./DarkModeContext";
 import "./custom.css";
 
 const availableFields = [
@@ -16,17 +17,17 @@ const availableFields = [
     name: "leadstatus", 
     label: "Lead Status", 
     type: "dropdown", 
-    options: ["OnProcess", "Complete", "Cancelled"], // Removed space
+    options: ["OnProcess", "Complete", "Cancelled"],
     icon: "chart-line" 
   }
 ];
 
 const CustomForm = () => {
+  const { darkMode } = useContext(DarkModeContext);
   const [selectedFields, setSelectedFields] = useState([]);
   const [formData, setFormData] = useState({});
   const [leads, setLeads] = useState([]);
 
-  // Fetch data from Firebase on component mount
   useEffect(() => {
     const leadsRef = ref(db, "custom_leads");
     const unsubscribe = onValue(leadsRef, (snapshot) => {
@@ -73,48 +74,55 @@ const CustomForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Ensure leadstatus is properly set
       const submissionData = {
         ...formData,
-        leadstatus: formData.leadstatus || "OnProcess" // Default value if not set
+        leadstatus: formData.leadstatus || "OnProcess"
       };
       
       await push(ref(db, "custom_leads"), submissionData);
       Swal.fire({
         title: "Success!",
         text: "Custom Lead added successfully!",
-        icon: "success"
+        icon: "success",
+        background: darkMode ? "#2a2a3a" : "#ffffff",
+        color: darkMode ? "#ffffff" : "#000000"
       });
       setFormData({});
     } catch (error) {
       console.error("Submission error:", error);
-      Swal.fire("Error!", "Failed to add custom lead.", "error");
+      Swal.fire({
+        title: "Error!",
+        text: "Failed to add custom lead.",
+        icon: "error",
+        background: darkMode ? "#2a2a3a" : "#ffffff",
+        color: darkMode ? "#ffffff" : "#000000"
+      });
     }
   };
 
   return (
-    <div className="content-container">
+    <div className={`content-container ${darkMode ? 'dark-mode' : ''}`}>
       {/* Left Side - Enhanced Form */}
-      <div className="form-container">
-        <h2 className="form-title">
-          <i className="fas fa-pencil-alt me-2"></i>
+      <div className={`form-container ${darkMode ? 'dark-form' : ''}`}>
+        <h2 className={`form-title ${darkMode ? 'text-light' : ''}`}>
+          <i className={`fas fa-pencil-alt me-2 ${darkMode ? 'text-light' : ''}`}></i>
           Custom Lead Form
         </h2>
         
         <div className="mb-4">
-          <label className="form-section-label">
-            <i className="fas fa-plus-circle me-2"></i>
+          <label className={`form-section-label ${darkMode ? 'text-light' : ''}`}>
+            <i className={`fas fa-plus-circle me-2 ${darkMode ? 'text-light' : ''}`}></i>
             Add Fields
           </label>
           <div className="d-flex flex-wrap gap-2">
             {availableFields.map((field) => (
               <button
                 key={field.name}
-                className="btn btn-add-field"
+                className={`btn btn-add-field ${darkMode ? 'dark-btn-add' : ''}`}
                 onClick={() => handleAddField(field)}
                 type="button"
               >
-                <i className={`fas fa-${field.icon} me-2`}></i>
+                <i className={`fas fa-${field.icon} me-2 ${darkMode ? 'text-light' : ''}`}></i>
                 {field.label}
               </button>
             ))}
@@ -125,16 +133,16 @@ const CustomForm = () => {
           <form onSubmit={handleSubmit} className="form-content">
             <div className="form-group">
               {selectedFields.map((field) => (
-                <div key={field.name} className="field-container">
-                  <label className="input-label">
-                    <i className={`fas fa-${field.icon} me-2`}></i>
+                <div key={field.name} className={`field-container ${darkMode ? 'dark-field' : ''}`}>
+                  <label className={`input-label ${darkMode ? 'text-light' : ''}`}>
+                    <i className={`fas fa-${field.icon} me-2 ${darkMode ? 'text-light' : ''}`}></i>
                     {field.label}
                   </label>
                   <div className="input-group">
                     {field.type === "dropdown" ? (
                       <select
                         name={field.name}
-                        className="form-input"
+                        className={`form-input ${darkMode ? 'dark-input' : ''}`}
                         value={formData[field.name] || field.options[0]}
                         onChange={handleChange}
                         required
@@ -149,7 +157,7 @@ const CustomForm = () => {
                       <input
                         type={field.type}
                         name={field.name}
-                        className="form-input"
+                        className={`form-input ${darkMode ? 'dark-input' : ''}`}
                         value={formData[field.name] || ""}
                         onChange={handleChange}
                         required
@@ -157,7 +165,7 @@ const CustomForm = () => {
                     )}
                     <button
                       type="button"
-                      className="btn-remove-field"
+                      className={`btn-remove-field ${darkMode ? 'dark-remove-btn' : ''}`}
                       onClick={() => handleRemoveField(field.name)}
                     >
                       <i className="fas fa-trash-alt"></i>
@@ -168,8 +176,8 @@ const CustomForm = () => {
             </div>
 
             {selectedFields.length > 0 && (
-              <button type="submit" className="btn-submit">
-                <i className="fas fa-paper-plane me-2"></i>
+              <button type="submit" className={`btn-submit ${darkMode ? 'dark-submit' : ''}`}>
+                <i className={`fas fa-paper-plane me-2 ${darkMode ? 'text-light' : ''}`}></i>
                 Submit Lead
               </button>
             )}
@@ -178,21 +186,21 @@ const CustomForm = () => {
       </div>
 
       {/* Right Side - Fetched Data */}
-      <div className="data-container">
-        <h2 className="fs-4 fw-bold mb-3">Leads Data</h2>
-        <div className="leads-list">
+      <div className={`data-container ${darkMode ? 'dark-data' : ''}`}>
+        <h2 className={`fs-4 fw-bold mb-3 ${darkMode ? 'text-light' : ''}`}>Leads Data</h2>
+        <div className={`leads-list ${darkMode ? 'dark-leads' : ''}`}>
           {leads.length > 0 ? (
             leads.map((lead) => (
-              <div key={lead.id} className="lead-item">
+              <div key={lead.id} className={`lead-item ${darkMode ? 'dark-lead-item' : ''}`}>
                 {Object.entries(lead).map(([key, value]) => (
-                  <p key={key}>
-                    <strong>{key}:</strong> {value || "Not set"}
+                  <p key={key} className={darkMode ? 'text-light' : ''}>
+                    <strong className={darkMode ? 'text-light' : ''}>{key}:</strong> {value || "Not set"}
                   </p>
                 ))}
               </div>
             ))
           ) : (
-            <p>No leads found.</p>
+            <p className={darkMode ? 'text-light' : ''}>No leads found.</p>
           )}
         </div>
       </div>

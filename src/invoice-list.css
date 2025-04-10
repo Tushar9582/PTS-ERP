@@ -1,61 +1,88 @@
-/* Fix for desktop view spacing */
-#root > div > div[style*="flex-grow: 1"] > div[style*="max-width: 1200px"] {
-    margin-left: 0 !important;
-    padding: 16px !important;
-    max-width: calc(100% - 16px) !important;
-    transition: all 0.3s ease;
+/* === Base Styles === */
+.invoice-container {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  margin-left: 260px;
+  transition: all 0.3s ease;
+}
+
+.invoice-header {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.invoice-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.invoice-controls input {
+  min-width: 220px;
+}
+
+/* Table responsiveness */
+.invoice-table-wrapper {
+  overflow-x: auto;
+}
+
+.invoice-card {
+  margin-bottom: 16px;
+}
+
+@media (max-width: 768px) {
+  .invoice-container {
+    margin-left: 0;
+    padding: 16px;
   }
-  
-  /* Hamburger menu fixes */
-  .hamburger {
-    position: fixed !important;
-    top: 15px !important;
-    left: 15px !important;
-    z-index: 1050 !important;
-    background: white !important;
-    padding: 10px !important;
-    border-radius: 5px !important;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
-    display: block !important;
+
+  .invoice-header {
+    flex-direction: column;
+    align-items: flex-start;
   }
-  
-  /* Sidebar adjustments */
-  .sidebar {
-    transition: transform 0.3s ease !important;
-    z-index: 1040 !important;
+
+  .invoice-controls {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
   }
-  
-  /* Responsive behavior */
-  @media (min-width: 769px) {
-    .hamburger {
-      display: none !important;
-    }
-    
-    .sidebar {
-      transform: translateX(0) !important;
-    }
-    
-    #root > div > div[style*="flex-grow: 1"] > div[style*="max-width: 1200px"] {
-      margin-left: 250px !important;
-    }
+
+  .invoice-controls input,
+  .invoice-controls button {
+    width: 100%;
   }
-  
-  @media (max-width: 768px) {
-    .sidebar {
-      transform: translateX(-100%) !important;
-    }
-    
-    .sidebar.open {
-      transform: translateX(0) !important;
-    }
-    
-    /* Mobile table adjustments */
-    .ant-table {
-      font-size: 13px !important;
-    }
-    
-    .ant-table-thead > tr > th,
-    .ant-table-tbody > tr > td {
-      padding: 6px 8px !important;
-    }
+
+  /* Mobile view as cards */
+  .invoice-card {
+    display: block;
+    padding: 16px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
   }
+
+  .invoice-card .ant-card {
+    margin: 0;
+  }
+
+  /* Hide the table on small screens */
+  .desktop-table {
+    display: none;
+  }
+}
+
+@media (min-width: 769px) {
+  /* Hide card view on desktop */
+  .invoice-card {
+    display: none;
+  }
+
+  /* Show the table on desktop */
+  .desktop-table {
+    display: block;
+  }
+}

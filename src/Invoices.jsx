@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Table, Button, Modal, Input, Dropdown, Menu } from "antd";
+import { Table, Button, Modal, Input, Dropdown, Menu, Card } from "antd";
 import { SearchOutlined, DownOutlined } from "@ant-design/icons";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import NewInvoiceForm from "./NewInvoiceForm";
 import { ref, onValue } from "firebase/database";
 import { db } from "./firebase";
-import "./invoice-list.css"
+import "./invoice-list.css"; // Make sure this file exists
 
 const InvoiceList = () => {
   const [invoices, setInvoices] = useState([]);
@@ -40,7 +40,7 @@ const InvoiceList = () => {
         }
       });
     };
-    
+
     fetchData("customers", setCustomers, setCustomerOptions);
     fetchData("products", setProducts, () => {});
     fetchData("companies", setCompanies, setCompanyOptions);
@@ -111,21 +111,23 @@ const InvoiceList = () => {
     { title: "Number", dataIndex: "number", key: "number" },
     { title: "Client", dataIndex: "client", key: "client" },
     { title: "Company", dataIndex: "company", key: "company" },
-    { 
-      title: "Products", 
-      dataIndex: "products", 
-      key: "products", 
+    {
+      title: "Products",
+      dataIndex: "products",
+      key: "products",
       render: (products) => (
-        <Dropdown overlay={
-          <Menu>
-            {products.map((product, index) => (
-              <Menu.Item key={index}>{product}</Menu.Item>
-            ))}
-          </Menu>
-        }>
+        <Dropdown
+          overlay={
+            <Menu>
+              {products.map((product, index) => (
+                <Menu.Item key={index}>{product}</Menu.Item>
+              ))}
+            </Menu>
+          }
+        >
           <Button>{products.length > 1 ? "Multiple Products" : products[0]} <DownOutlined /></Button>
         </Dropdown>
-      )
+      ),
     },
     { title: "Person", dataIndex: "person", key: "person" },
     { title: "Date", dataIndex: "date", key: "date" },
@@ -136,27 +138,69 @@ const InvoiceList = () => {
   ];
 
   return (
-    <div style={{ padding: "24px", maxWidth: "1200px", margin: "0 auto", marginLeft: "260px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "16px" }}>
+    <div className="invoice-container">
+      <div className="invoice-header">
         <h2>Invoice List</h2>
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div className="invoice-controls">
           <Input
             placeholder="Search by Client, Company, Product, or Person"
             allowClear
-            style={{ width: 300 }}
             prefix={<SearchOutlined />}
             value={searchText}
             onChange={handleSearch}
           />
-          <Button type="primary" onClick={generatePDF}>Export to PDF</Button>
-          <Button type="primary" onClick={() => setIsModalOpen(true)}>+ Add New Invoice</Button>
+          <Button type="primary" onClick={generatePDF}>
+            Export to PDF
+          </Button>
+          <Button type="primary" onClick={() => setIsModalOpen(true)}>
+            + Add New Invoice
+          </Button>
         </div>
       </div>
 
-      <Table columns={columns} dataSource={filteredInvoices} rowKey="id" locale={{ emptyText: "No data" }} />
+      <div className="invoice-table-wrapper">
+        {/* For mobile, we will render as cards */}
+        {filteredInvoices.map((invoice) => (
+          <div className="invoice-card" key={invoice.id}>
+            <Card title={`Invoice #${invoice.number}`}>
+              <p><strong>Client:</strong> {invoice.client}</p>
+              <p><strong>Company:</strong> {invoice.company}</p>
+              <p><strong>Products:</strong> {invoice.products.join(", ")}</p>
+              <p><strong>Person:</strong> {invoice.person}</p>
+              <p><strong>Date:</strong> {invoice.date}</p>
+              <p><strong>Invoice Date:</strong> {invoice.expireDate}</p>
+              <p><strong>Total:</strong> {invoice.total}</p>
+              <p><strong>Status:</strong> {invoice.status}</p>
+              <p><strong>Created By:</strong> {invoice.createdBy}</p>
+            </Card>
+          </div>
+        ))}
 
-      <Modal title="New Invoice" open={isModalOpen} onCancel={() => setIsModalOpen(false)} footer={null} width={800}>
-        <NewInvoiceForm onSave={() => {}} onClose={() => setIsModalOpen(false)} customers={customerOptions} companies={companyOptions} people={peopleOptions} />
+        {/* For larger screens, render the table */}
+        <Table
+          columns={columns}
+          dataSource={filteredInvoices}
+          rowKey="id"
+          locale={{ emptyText: "No data" }}
+          scroll={{ x: true }}
+          className="desktop-table"
+        />
+      </div>
+
+      <Modal
+        title="New Invoice"
+        open={isModalOpen}
+        onCancel={() => setIsModalOpen(false)}
+        footer={null}
+        width={800}
+      >
+        <NewInvoiceForm
+          onSave={() => {}}
+          onClose={() => setIsModalOpen(false)}
+          customers={customerOptions}
+          companies={companyOptions}
+          people={peopleOptions}
+        />
       </Modal>
     </div>
   );

@@ -1,84 +1,176 @@
-/* Original styles (unchanged) */
+/* Base Styles */
 .admin-container {
-  margin-left: 250px; /* Adjust based on sidebar width */
+  margin-left: 250px;
   padding: 20px;
-  width: calc(100% - 250px); /* Ensure it takes remaining space */
+  width: calc(100% - 250px);
+  background-color: #f5f7fa;
+  min-height: 100vh;
+  transition: background-color 0.3s ease;
 }
 
+/* Dark Mode Base */
+.admin-container.dark-mode {
+  background-color: #1a1a2e;
+  color: #e0e0e0;
+}
+
+/* Header Styles */
 .admin-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 15px;
+  padding: 15px 0;
 }
 
-.admin-actions {
-  display: flex;
-  gap: 10px;
+.dark-mode .admin-header {
+  border-bottom: 1px solid #3d3d4d;
 }
 
-.search-input {
-  width: 200px;
+/* Text Styles */
+.dark-mode h2 {
+  color: #e0e0e0;
 }
 
-.refresh-btn,
-.add-admin-btn {
-  font-weight: bold;
+/* Search Bar Styles */
+.search-bar {
+  width: 300px;
+  transition: all 0.3s ease;
 }
 
+.dark-mode .search-bar {
+  background-color: #2d2d3d;
+  border-color: #3d3d4d;
+  color: #e0e0e0;
+}
+
+.dark-mode .search-bar .ant-input-prefix {
+  color: #a0a0a0;
+}
+
+.dark-mode .search-bar input {
+  background-color: transparent;
+  color: #e0e0e0;
+}
+
+.dark-mode .search-bar input::placeholder {
+  color: #a0a0a0;
+}
+
+/* Table Styles */
+.dark-mode .ant-table {
+  background-color: #2a2a3a;
+  color: #e0e0e0;
+}
+
+.dark-mode .ant-table-thead > tr > th {
+  background-color: #2a2a3a;
+  color: #e0e0e0;
+  border-bottom: 1px solid #3d3d4d;
+}
+
+.dark-mode .ant-table-tbody > tr > td {
+  border-bottom: 1px solid #3d3d4d;
+  background-color: #2a2a3a;
+  color: #e0e0e0;
+}
+
+.dark-mode .ant-table-tbody > tr:hover > td {
+  background-color: #3d3d4d !important;
+}
+
+/* Checkbox Styles */
+.dark-mode .ant-checkbox-inner {
+  background-color: #2d2d3d;
+  border-color: #4d4d5d;
+}
+
+.dark-mode .ant-checkbox-checked .ant-checkbox-inner {
+  background-color: #1890ff;
+  border-color: #1890ff;
+}
+
+/* Button Styles */
+.dark-mode .ant-btn {
+  color: #e0e0e0;
+  background-color: #2d2d3d;
+  border-color: #3d3d4d;
+}
+
+.dark-mode .ant-btn-primary {
+  background-color: #1890ff;
+  border-color: #1890ff;
+}
+
+.dark-mode .ant-btn-danger {
+  background-color: #ff4d4f;
+  border-color: #ff4d4f;
+}
+
+.dark-mode .ant-btn-circle {
+  background-color: #3d3d4d;
+  border-color: #3d3d4d;
+}
+
+.dark-mode .ant-btn:hover {
+  opacity: 0.8;
+}
+
+/* Responsive Styles */
 @media (max-width: 768px) {
   .admin-container {
-      margin-left: 0;
-      width: 100%;
+    margin-left: 0;
+    width: 100%;
   }
-}
-
-/* Enhanced responsive additions (won't affect desktop) */
-@media (max-width: 992px) {
+  
   .admin-header {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 15px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
   }
   
-  .admin-actions {
-      width: 100%;
-      justify-content: space-between;
-  }
-  
-  .search-input {
-      width: 100%;
-      max-width: 300px;
+  .search-bar {
+    width: 100%;
   }
 }
 
 @media (max-width: 576px) {
   .admin-container {
-      padding: 15px 10px;
+    padding: 15px 10px;
   }
   
-  .admin-actions {
-      flex-direction: column;
-      gap: 8px;
-  }
-  
-  .search-input {
-      max-width: 100%;
-  }
-  
-  .refresh-btn,
-  .add-admin-btn {
-      width: 100%;
+  .search-bar {
+    width: 100%;
   }
 }
 
-/* Tablet landscape optimization */
-@media (min-width: 577px) and (max-width: 768px) {
-  .admin-actions {
-      flex-wrap: wrap;
-  }
-  
-  .search-input {
-      min-width: 200px;
-  }
+/* Pagination Styles for Dark Mode */
+.dark-mode .ant-pagination-item {
+  background-color: #2d2d3d;
+  border-color: #3d3d4d;
+}
+
+.dark-mode .ant-pagination-item a {
+  color: #e0e0e0;
+}
+
+.dark-mode .ant-pagination-item-active {
+  background-color: #1890ff;
+  border-color: #1890ff;
+}
+
+.dark-mode .ant-pagination-item-active a {
+  color: white;
+}
+
+.dark-mode .ant-pagination-prev .ant-pagination-item-link,
+.dark-mode .ant-pagination-next .ant-pagination-item-link {
+  background-color: #2d2d3d;
+  border-color: #3d3d4d;
+  color: #e0e0e0;
+}
+
+/* Table Row Selection */
+.dark-mode .ant-table-row-selected td {
+  background-color: #3d3d4d !important;
 }
