@@ -17,9 +17,44 @@
   flex-direction: column;
   padding: 20px 10px;
   overflow-y: auto;
-  transition: transform 0.3s ease-in-out;
+  transition: transform 0.3s ease-in-out, background-color 0.3s ease;
   z-index: 1000;
   border-right: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Dark Mode Styles */
+.sidebar.dark-mode {
+  background-color: #1a1a2e;
+  border-right-color: #2a2a3a;
+}
+
+.sidebar.dark-mode .logo {
+  color: #ffffff;
+}
+
+.sidebar.dark-mode .nav-item {
+  color: #e0e0e0;
+}
+
+.sidebar.dark-mode .nav-item:hover {
+  background-color: #2a2a3a;
+}
+
+.sidebar.dark-mode .nav-item svg {
+  color: #6c63ff;
+}
+
+.sidebar.dark-mode .active .nav-item {
+  background-color: #6c63ff;
+  color: white;
+}
+
+.sidebar.dark-mode .active .nav-item svg {
+  color: white;
+}
+
+.sidebar.dark-mode::-webkit-scrollbar-thumb {
+  background-color: #4a4a4a;
 }
 
 /* Sidebar should always be visible on desktop */
@@ -42,15 +77,32 @@
 
 /* Sidebar Header */
 .sidebar-header {
-  text-align: center;
-  padding-bottom: 15px;
-  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 1rem;
+}
+
+.toggle-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.logo-img {
+  height: 100px;
+  object-fit: contain;
+ 
+}
+
+.sidebar.dark-mode .sidebar-header {
+  border-bottom-color: #2a2a3a;
 }
 
 .logo {
   font-size: 22px;
   font-weight: bold;
   color: #333;
+  transition: color 0.3s ease;
 }
 
 .nav-links {
@@ -63,7 +115,7 @@
   margin-bottom: 12px;
 }
 
-.nav-links a {
+.nav-links a, .nav-links button {
   display: flex;
   align-items: center;
   text-decoration: none;
@@ -71,26 +123,49 @@
   color: #333;
   padding: 12px 15px;
   border-radius: 8px;
-  transition: 0.3s;
+  transition: all 0.3s;
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
 }
 
-.nav-links a:hover {
+.nav-links a:hover, .nav-links button:hover {
   background-color: #f4f4f4;
 }
 
-.nav-links a svg {
+.nav-links a svg, .nav-links button svg {
   margin-right: 12px;
   font-size: 18px;
   color: #007bff;
 }
 
-.nav-links .active a {
+.nav-links .active a, .nav-links .active button {
   background-color: #007bff;
   color: white;
 }
 
-.nav-links .active a svg {
+.nav-links .active a svg, .nav-links .active button svg {
   color: white;
+}
+
+/* Dark Mode Toggle Button */
+.dark-mode-toggle button {
+  margin-top: 20px;
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.sidebar.dark-mode .dark-mode-toggle button {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark-mode-toggle button:hover {
+  background-color: rgba(0, 0, 0, 0.15);
+}
+
+.sidebar.dark-mode .dark-mode-toggle button:hover {
+  background-color: rgba(255, 255, 255, 0.15);
 }
 
 /* Hamburger Menu */
@@ -106,6 +181,12 @@
   padding: 10px;
   border-radius: 5px;
   box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.3s ease;
+}
+
+.sidebar.dark-mode + .hamburger {
+  background-color: #2a2a3a;
+  color: white;
 }
 
 /* Show hamburger only on mobile */

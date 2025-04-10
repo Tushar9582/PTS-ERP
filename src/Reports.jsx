@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   BarChart,
   Bar,
@@ -10,9 +10,11 @@ import {
 } from "recharts";
 import { ref, onValue } from "firebase/database";
 import { db } from "./firebase";
+import { DarkModeContext } from "./DarkModeContext";
 import "./Reports.css";
 
 const Reports = () => {
+  const { darkMode } = useContext(DarkModeContext);
   const [invoiceData, setInvoiceData] = useState({
     paid: 0,
     pending: 0,
@@ -111,8 +113,18 @@ const Reports = () => {
     };
   }, []);
 
+  // Custom chart colors based on dark mode
+  const chartColors = {
+    barFill: darkMode ? '#6c63ff' : '#007bff',
+    textColor: darkMode ? '#ffffff' : '#333333',
+    background: darkMode ? '#2a2a3a' : '#ffffff',
+    tooltipBg: darkMode ? '#1a1a2e' : '#ffffff',
+    axisColor: darkMode ? '#e0e0e0' : '#666666',
+    gridColor: darkMode ? '#3a3a4a' : '#e0e0e0'
+  };
+
   return (
-    <div className="main-container">
+    <div className={`main-container ${darkMode ? 'dark-mode' : ''}`}>
       <div className="report-container">
         {/* Summary Cards */}
         <div className="row mb-4">
@@ -123,8 +135,8 @@ const Reports = () => {
             { title: "Total Clients", amount: customersData.count, color: "dark" }
           ].map((item, index) => (
             <div className="col-md-3" key={index}>
-              <div className="card shadow text-center p-3">
-                <h6 className="fw-bold">{item.title}</h6>
+              <div className={`card shadow p-3 ${darkMode ? 'dark-card' : ''}`}>
+                <h6 className={`fw-bold ${darkMode ? 'text-light' : ''}`}>{item.title}</h6>
                 <div className="d-flex justify-content-between align-items-center">
                   <span
                     className={`badge bg-${item.color}`}
@@ -139,20 +151,36 @@ const Reports = () => {
         </div>
 
         {/* Bar Chart */}
-        <div className="card shadow p-4">
-          <h5 className="fw-bold mb-3">Monthly Payments</h5>
+        <div className={`card shadow p-4 ${darkMode ? 'dark-card' : ''}`}>
+          <h5 className={`fw-bold mb-3 ${darkMode ? 'text-light' : ''}`}>Monthly Payments</h5>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={chartData}>
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
+              <XAxis 
+                dataKey="name" 
+                tick={{ fill: chartColors.textColor }}
+                stroke={chartColors.axisColor}
+              />
+              <YAxis 
+                tick={{ fill: chartColors.textColor }}
+                stroke={chartColors.axisColor}
+              />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: chartColors.tooltipBg,
+                  borderColor: chartColors.axisColor,
+                  color: chartColors.textColor
+                }}
+              />
               <Legend />
-              <Bar dataKey="payment" fill="#007bff" />
+              <Bar 
+                dataKey="payment" 
+                fill={chartColors.barFill}
+              />
             </BarChart>
           </ResponsiveContainer>
 
           <div className="mt-3">
-            <h6>
+            <h6 className={darkMode ? 'text-light' : ''}>
               Total Paid Invoice Amount:{" "}
               <span className="text-success">
                 ₹{invoiceData.totalAmount.toFixed(2)}

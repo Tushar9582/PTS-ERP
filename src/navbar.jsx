@@ -1,15 +1,21 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { 
   FaBars, FaTachometerAlt, FaFileInvoiceDollar, FaMoneyBillWave, 
-  FaClipboardList, FaBuilding, FaTags, FaBox, FaChartPie, FaCog 
+  FaClipboardList, FaBuilding, FaTags, FaBox, FaChartPie, FaCog,
+  FaMoon, FaSun
 } from "react-icons/fa";
+import { DarkModeContext } from "./DarkModeContext";
 import "./navbar.css";
+import darkToggleAnim from "./assets/animations/dark-toggle.lottie";
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+import logo from './assets/erp_logo.png'; // Adjust path if needed
 
 const Navbar = () => {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const { darkMode, toggleDarkMode } = useContext(DarkModeContext);
 
   // Handle window resize
   useEffect(() => {
@@ -53,10 +59,25 @@ const Navbar = () => {
       )}
 
       {/* Sidebar */}
-      <div className={`sidebar ${sidebarOpen ? "open" : ""}`}>
-        <div className="sidebar-header">
-          <h2 className="logo">ERP</h2>
-        </div>
+         <div className={`sidebar ${sidebarOpen ? "open" : ""} ${darkMode ? "dark-mode" : ""}`}>
+         <div className="sidebar-header">
+  <img src={logo} alt="ERP by PTS Logo" className="logo-img" />
+  
+  <div 
+    className="nav-item" 
+    onClick={toggleDarkMode} 
+    style={{ cursor: "pointer", width: 60 }}
+  >
+    <DotLottieReact
+      src={darkToggleAnim}
+      loop={true}
+      autoplay
+    />
+  </div>
+</div>
+
+
+
 
         <ul className="nav-links">
           <li className={location.pathname === "/" ? "active" : ""}>
@@ -167,6 +188,8 @@ const Navbar = () => {
               <FaCog size={18} /> Settings
             </Link>
           </li>
+          
+        
         </ul>
       </div>
     </>

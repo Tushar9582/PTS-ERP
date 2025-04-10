@@ -1,0 +1,87 @@
+/* Dark mode styles */
+body.dark-mode {
+  --bg-color: #1a1a1a;
+  --text-color: #ffffff;
+  --card-bg: #2d2d2d;
+  --border-color: #444;
+  --sidebar-bg: #222;
+  --table-header-bg: #333;
+  --table-row-odd: #2a2a2a;
+  --table-row-even: #252525;
+  --table-hover: #3a3a3a;
+  --modal-bg: #2d2d2d;
+  --input-bg: #333;
+  --input-border: #444;
+  --btn-primary-bg: #3a5a78;
+  --btn-primary-hover: #4a6a88;
+}
+
+/* Light mode variables */
+:root {
+  --bg-color: #f8f9fa;
+  --text-color: #212529;
+  --card-bg: #ffffff;
+  --border-color: #dee2e6;
+  --sidebar-bg: #343a40;
+  --table-header-bg: #f8f9fa;
+  --table-row-odd: #ffffff;
+  --table-row-even: #f8f9fa;
+  --table-hover: #e9ecef;
+  --modal-bg: #ffffff;
+  --input-bg: #ffffff;
+  --input-border: #ced4da;
+  --btn-primary-bg: #007bff;
+  --btn-primary-hover: #0069d9;
+}
+
+/* Apply variables to elements */
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.sidebar {
+  background-color: var(--sidebar-bg);
+}
+
+.card, .modal-content {
+  background-color: var(--card-bg);
+  border-color: var(--border-color);
+}
+
+.table thead th {
+  background-color: var(--table-header-bg);
+}
+
+.table tbody tr:nth-child(odd) {
+  background-color: var(--table-row-odd);
+}
+
+.table tbody tr:nth-child(even) {
+  background-color: var(--table-row-even);
+}
+
+.table-hover tbody tr:hover {
+  background-color: var(--table-hover);
+}
+
+.modal-content {
+  background-color: var(--modal-bg);
+}
+
+.form-control {
+  background-color: var(--input-bg);
+  border-color: var(--input-border);
+  color: var(--text-color);
+}
+
+.btn-primary {
+  background-color: var(--btn-primary-bg);
+  border-color: var(--btn-primary-bg);
+}
+
+.btn-primary:hover {
+  background-color: var(--btn-primary-hover);
+  border-color: var(--btn-primary-hover);
+}

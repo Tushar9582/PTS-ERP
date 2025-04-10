@@ -56,8 +56,8 @@ const Customers = ({ onSelectCustomer }) => {
   };
 
   return (
-    <div className="d-flex vh-100 bg-light" style={{ marginLeft: "200px" }}>
-      <main className="flex-grow-1 ms-5 p-4" style={{ marginLeft: "270px" }}>
+    <div className="container-fluid bg-light py-2 px-1 px-md-3">
+    <main className="main-content">
         <div className="bg-white p-4 shadow rounded">
           <div className="d-flex justify-content-between align-items-center mb-3">
             <h2 className="fs-3 fw-bold">Clients List</h2>
