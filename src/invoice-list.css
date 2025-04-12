@@ -5,16 +5,35 @@
   margin: 0 auto;
   margin-left: 260px;
   transition: all 0.3s ease;
+  background-color: #ffffff;
 }
 
+/* === Dark Mode Base === */
+.invoice-container.dark-mode {
+  background-color: #1a1a2e;
+  color: #e0e0e0;
+}
+
+.dark-text {
+  color: #e0e0e0 !important;
+}
+
+/* === Header Styles === */
 .invoice-header {
   display: flex;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 16px;
   margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e8e8e8;
 }
 
+.dark-mode .invoice-header {
+  border-bottom-color: #3d3d4d;
+}
+
+/* === Controls === */
 .invoice-controls {
   display: flex;
   flex-wrap: wrap;
@@ -24,17 +43,132 @@
 
 .invoice-controls input {
   min-width: 220px;
+  transition: all 0.3s ease;
 }
 
-/* Table responsiveness */
-.invoice-table-wrapper {
-  overflow-x: auto;
+.dark-mode .invoice-controls input {
+  background-color: #2d2d3d;
+  border-color: #3d3d4d;
+  color: #e0e0e0;
 }
 
-.invoice-card {
-  margin-bottom: 16px;
+.dark-mode .invoice-controls input::placeholder {
+  color: #a0a0a0;
 }
 
+.dark-mode .invoice-controls .ant-input-prefix {
+  color: #a0a0a0;
+}
+
+/* === Buttons === */
+.dark-export-btn {
+  background-color: #2a5885 !important;
+  border-color: #2a5885 !important;
+}
+
+.dark-export-btn:hover {
+  background-color: #1e4b7b !important;
+}
+
+.dark-add-btn {
+  background-color: #239955 !important;
+  border-color: #239955 !important;
+}
+
+.dark-add-btn:hover {
+  background-color: #1d8549 !important;
+}
+
+/* === Table Styles === */
+.dark-table .ant-table {
+  background-color: #2a2a3a !important;
+  color: #e0e0e0 !important;
+}
+
+.dark-table .ant-table-thead > tr > th {
+  background-color: #2a2a3a !important;
+  color: #e0e0e0 !important;
+  border-bottom: 1px solid #3d3d4d !important;
+}
+
+.dark-table .ant-table-tbody > tr > td {
+  background-color: #2a2a3a !important;
+  color: #e0e0e0 !important;
+  border-bottom: 1px solid #3d3d4d !important;
+}
+
+.dark-table .ant-table-tbody > tr:hover > td {
+  background-color: #3d3d4d !important;
+}
+
+.dark-table-text {
+  color: #e0e0e0 !important;
+}
+
+/* === Dropdown Styles === */
+.dark-dropdown-btn {
+  background-color: #3d3d4d !important;
+  border-color: #3d3d4d !important;
+  color: #e0e0e0 !important;
+}
+
+.dark-dropdown-menu {
+  background-color: #2a2a3a !important;
+  border: 1px solid #3d3d4d !important;
+}
+
+.dark-menu-item {
+  color: #e0e0e0 !important;
+}
+
+.dark-menu-item:hover {
+  background-color: #3d3d4d !important;
+}
+
+.dark-dropdown-icon {
+  color: #e0e0e0 !important;
+}
+
+/* === Card Styles (Mobile) === */
+.dark-card .ant-card {
+  background-color: #2a2a3a !important;
+  border-color: #3d3d4d !important;
+}
+
+.dark-card-inner .ant-card-head {
+  border-bottom-color: #3d3d4d !important;
+  color: #e0e0e0 !important;
+}
+
+.dark-card-text {
+  color: #e0e0e0 !important;
+}
+
+.dark-card-label {
+  color: #a0a0a0 !important;
+}
+
+/* === Modal Styles === */
+.dark-modal .ant-modal-content {
+  background-color: #2a2a3a !important;
+  color: #e0e0e0 !important;
+}
+
+.dark-modal .ant-modal-header {
+  background-color: #2a2a3a !important;
+  border-bottom-color: #3d3d4d !important;
+  color: #e0e0e0 !important;
+}
+
+.dark-modal .ant-modal-title {
+  color: #e0e0e0 !important;
+}
+
+.dark-modal .ant-modal-close-x {
+  color: #e0e0e0 !important;
+}
+
+/* === Responsive Styles === */
 @media (max-width: 768px) {
   .invoice-container {
     margin-left: 0;
@@ -63,6 +197,11 @@
     padding: 16px;
     border: 1px solid #ddd;
     border-radius: 8px;
+    margin-bottom: 16px;
+  }
+
+  .dark-mode .invoice-card {
+    border-color: #3d3d4d !important;
   }
 
   .invoice-card .ant-card {
@@ -85,4 +224,30 @@
   .desktop-table {
     display: block;
   }
+}
+
+/* === Pagination Styles === */
+.dark-table .ant-pagination-item {
+  background-color: #2d2d3d !important;
+  border-color: #3d3d4d !important;
+}
+
+.dark-table .ant-pagination-item a {
+  color: #e0e0e0 !important;
+}
+
+.dark-table .ant-pagination-item-active {
+  background-color: #1890ff !important;
+  border-color: #1890ff !important;
+}
+
+.dark-table .ant-pagination-item-active a {
+  color: white !important;
+}
+
+.dark-table .ant-pagination-prev .ant-pagination-item-link,
+.dark-table .ant-pagination-next .ant-pagination-item-link {
+  background-color: #2d2d3d !important;
+  border-color: #3d3d4d !important;
+  color: #e0e0e0 !important;
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { Table, Button, Modal, Input, Dropdown, Menu, Card } from "antd";
 import { SearchOutlined, DownOutlined } from "@ant-design/icons";
 import jsPDF from "jspdf";
@@ -6,9 +6,11 @@ import autoTable from "jspdf-autotable";
 import NewInvoiceForm from "./NewInvoiceForm";
 import { ref, onValue } from "firebase/database";
 import { db } from "./firebase";
-import "./invoice-list.css"; // Make sure this file exists
+import { DarkModeContext } from "./DarkModeContext";
+import "./invoice-list.css";
 
 const InvoiceList = () => {
+  const { darkMode } = useContext(DarkModeContext);
   const [invoices, setInvoices] = useState([]);
   const [filteredInvoices, setFilteredInvoices] = useState([]);
   const [searchText, setSearchText] = useState("");
@@ -108,9 +110,24 @@ const InvoiceList = () => {
   };
 
   const columns = [
-    { title: "Number", dataIndex: "number", key: "number" },
-    { title: "Client", dataIndex: "client", key: "client" },
-    { title: "Company", dataIndex: "company", key: "company" },
+    { 
+      title: "Number", 
+      dataIndex: "number", 
+      key: "number",
+      className: darkMode ? "dark-table-text" : ""
+    },
+    { 
+      title: "Client", 
+      dataIndex: "client", 
+      key: "client",
+      className: darkMode ? "dark-table-text" : ""
+    },
+    { 
+      title: "Company", 
+      dataIndex: "company", 
+      key: "company",
+      className: darkMode ? "dark-table-text" : ""
+    },
     {
       title: "Products",
       dataIndex: "products",
@@ -118,72 +135,140 @@ const InvoiceList = () => {
       render: (products) => (
         <Dropdown
           overlay={
-            <Menu>
+            <Menu className={darkMode ? "dark-dropdown-menu" : ""}>
               {products.map((product, index) => (
-                <Menu.Item key={index}>{product}</Menu.Item>
+                <Menu.Item 
+                  key={index}
+                  className={darkMode ? "dark-menu-item" : ""}
+                >
+                  {product}
+                </Menu.Item>
               ))}
             </Menu>
           }
         >
-          <Button>{products.length > 1 ? "Multiple Products" : products[0]} <DownOutlined /></Button>
+          <Button className={darkMode ? "dark-dropdown-btn" : ""}>
+            {products.length > 1 ? "Multiple Products" : products[0]} 
+            <DownOutlined className={darkMode ? "dark-dropdown-icon" : ""} />
+          </Button>
         </Dropdown>
       ),
     },
-    { title: "Person", dataIndex: "person", key: "person" },
-    { title: "Date", dataIndex: "date", key: "date" },
-    { title: "Invoice Date", dataIndex: "expireDate", key: "expireDate" },
-    { title: "Total", dataIndex: "total", key: "total" },
-    { title: "Status", dataIndex: "status", key: "status" },
-    { title: "Created By", dataIndex: "createdBy", key: "createdBy" },
+    { 
+      title: "Person", 
+      dataIndex: "person", 
+      key: "person",
+      className: darkMode ? "dark-table-text" : ""
+    },
+    { 
+      title: "Date", 
+      dataIndex: "date", 
+      key: "date",
+      className: darkMode ? "dark-table-text" : ""
+    },
+    { 
+      title: "Invoice Date", 
+      dataIndex: "expireDate", 
+      key: "expireDate",
+      className: darkMode ? "dark-table-text" : ""
+    },
+    { 
+      title: "Total", 
+      dataIndex: "total", 
+      key: "total",
+      className: darkMode ? "dark-table-text" : ""
+    },
+    { 
+      title: "Status", 
+      dataIndex: "status", 
+      key: "status",
+      className: darkMode ? "dark-table-text" : ""
+    },
+    { 
+      title: "Created By", 
+      dataIndex: "createdBy", 
+      key: "createdBy",
+      className: darkMode ? "dark-table-text" : ""
+    },
   ];
 
   return (
-    <div className="invoice-container">
+    <div className={`invoice-container ${darkMode ? 'dark-mode' : ''}`}>
       <div className="invoice-header">
-        <h2>Invoice List</h2>
+        <h2 className={darkMode ? "dark-text" : ""}>Invoice List</h2>
         <div className="invoice-controls">
           <Input
             placeholder="Search by Client, Company, Product, or Person"
             allowClear
-            prefix={<SearchOutlined />}
+            prefix={<SearchOutlined className={darkMode ? "dark-search-icon" : ""} />}
             value={searchText}
             onChange={handleSearch}
+            className={darkMode ? "dark-search-input" : ""}
           />
-          <Button type="primary" onClick={generatePDF}>
+          <Button 
+            type="primary" 
+            onClick={generatePDF}
+            className={darkMode ? "dark-export-btn" : ""}
+          >
             Export to PDF
           </Button>
-          <Button type="primary" onClick={() => setIsModalOpen(true)}>
+          <Button 
+            type="primary" 
+            onClick={() => setIsModalOpen(true)}
+            className={darkMode ? "dark-add-btn" : ""}
+          >
             + Add New Invoice
           </Button>
         </div>
       </div>
 
       <div className="invoice-table-wrapper">
-        {/* For mobile, we will render as cards */}
+        {/* Mobile cards */}
         {filteredInvoices.map((invoice) => (
-          <div className="invoice-card" key={invoice.id}>
-            <Card title={`Invoice #${invoice.number}`}>
-              <p><strong>Client:</strong> {invoice.client}</p>
-              <p><strong>Company:</strong> {invoice.company}</p>
-              <p><strong>Products:</strong> {invoice.products.join(", ")}</p>
-              <p><strong>Person:</strong> {invoice.person}</p>
-              <p><strong>Date:</strong> {invoice.date}</p>
-              <p><strong>Invoice Date:</strong> {invoice.expireDate}</p>
-              <p><strong>Total:</strong> {invoice.total}</p>
-              <p><strong>Status:</strong> {invoice.status}</p>
-              <p><strong>Created By:</strong> {invoice.createdBy}</p>
+          <div className={`invoice-card ${darkMode ? 'dark-card' : ''}`} key={invoice.id}>
+            <Card 
+              title={`Invoice #${invoice.number}`}
+              className={darkMode ? "dark-card-inner" : ""}
+            >
+              <p className={darkMode ? "dark-card-text" : ""}>
+                <strong className={darkMode ? "dark-card-label" : ""}>Client:</strong> {invoice.client}
+              </p>
+              <p className={darkMode ? "dark-card-text" : ""}>
+                <strong className={darkMode ? "dark-card-label" : ""}>Company:</strong> {invoice.company}
+              </p>
+              <p className={darkMode ? "dark-card-text" : ""}>
+                <strong className={darkMode ? "dark-card-label" : ""}>Products:</strong> {invoice.products.join(", ")}
+              </p>
+              <p className={darkMode ? "dark-card-text" : ""}>
+                <strong className={darkMode ? "dark-card-label" : ""}>Person:</strong> {invoice.person}
+              </p>
+              <p className={darkMode ? "dark-card-text" : ""}>
+                <strong className={darkMode ? "dark-card-label" : ""}>Date:</strong> {invoice.date}
+              </p>
+              <p className={darkMode ? "dark-card-text" : ""}>
+                <strong className={darkMode ? "dark-card-label" : ""}>Invoice Date:</strong> {invoice.expireDate}
+              </p>
+              <p className={darkMode ? "dark-card-text" : ""}>
+                <strong className={darkMode ? "dark-card-label" : ""}>Total:</strong> {invoice.total}
+              </p>
+              <p className={darkMode ? "dark-card-text" : ""}>
+                <strong className={darkMode ? "dark-card-label" : ""}>Status:</strong> {invoice.status}
+              </p>
+              <p className={darkMode ? "dark-card-text" : ""}>
+                <strong className={darkMode ? "dark-card-label" : ""}>Created By:</strong> {invoice.createdBy}
+              </p>
             </Card>
           </div>
         ))}
 
-        {/* For larger screens, render the table */}
+        {/* Desktop table */}
         <Table
           columns={columns}
           dataSource={filteredInvoices}
           rowKey="id"
           locale={{ emptyText: "No data" }}
           scroll={{ x: true }}
-          className="desktop-table"
+          className={`desktop-table ${darkMode ? 'dark-table' : ''}`}
         />
       </div>
 
@@ -193,6 +278,7 @@ const InvoiceList = () => {
         onCancel={() => setIsModalOpen(false)}
         footer={null}
         width={800}
+        className={darkMode ? "dark-modal" : ""}
       >
         <NewInvoiceForm
           onSave={() => {}}
@@ -200,6 +286,7 @@ const InvoiceList = () => {
           customers={customerOptions}
           companies={companyOptions}
           people={peopleOptions}
+          darkMode={darkMode}
         />
       </Modal>
     </div>
