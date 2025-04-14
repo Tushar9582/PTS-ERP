@@ -29,3 +29,24 @@
 .button-wrapper .form-control {
   min-height: 38px;
 }
+/* Panel transition styles */
+.translate-0 {
+  transform: translateX(0) !important;
+}
+
+.translate-100 {
+  transform: translateX(100%) !important;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 0 !important;
+    padding: 10px;
+  }
+
+  .position-fixed {
+    width: 100% !important;
+    padding: 20px;
+  }
+}

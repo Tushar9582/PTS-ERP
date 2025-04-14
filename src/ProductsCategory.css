@@ -1,0 +1,103 @@
+/* Base container styles */
+body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background-color: #f8f9fa;
+  }
+  
+  /* Smooth sidebar slide animation */
+  .translate-0 {
+    transform: translateX(0) !important;
+  }
+  .translate-100 {
+    transform: translateX(100%) !important;
+  }
+  
+  /* Table styles */
+  .table {
+    border-collapse: collapse;
+    background-color: #ffffff;
+  }
+  .table th,
+  .table td {
+    vertical-align: middle;
+    font-size: 15px;
+    padding: 12px;
+  }
+  
+  /* Search & Button group */
+  input.form-control {
+    border-radius: 6px;
+    transition: all 0.2s ease-in-out;
+  }
+  input.form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13,110,253,.25);
+  }
+  
+  /* Button spacing and sizing */
+  button.btn {
+    border-radius: 6px;
+    font-size: 15px;
+    padding: 8px 16px;
+  }
+  .btn-primary {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+  }
+  .btn-outline-secondary {
+    border-color: #6c757d;
+    color: #6c757d;
+  }
+  .btn-outline-secondary:hover {
+    background-color: #6c757d;
+    color: #fff;
+  }
+  
+  /* Sidebar styles for desktop */
+  .position-fixed {
+    z-index: 1050;
+    box-shadow: -3px 0 10px rgba(0,0,0,0.1);
+  }
+  .btn-close {
+    top: 12px;
+    right: 12px;
+  }
+  
+  /* Modal styling for mobile */
+  .modal {
+    z-index: 1055;
+  }
+  .modal-content {
+    border-radius: 12px;
+  }
+  .modal-header {
+    border-bottom: none;
+  }
+  .modal-title {
+    font-size: 1.25rem;
+    font-weight: bold;
+  }
+  
+  /* Form elements */
+  form .form-label {
+    font-weight: 500;
+  }
+  form .form-control {
+    font-size: 14px;
+  }
+  form .btn-primary {
+    background-color: #0d6efd;
+    border: none;
+  }
+  
+  /* Responsive tweaks */
+  @media (max-width: 767.98px) {
+    .table-responsive {
+      overflow-x: auto;
+    }
+    .modal-content {
+      margin: 0 10px;
+    }
+  }
+  

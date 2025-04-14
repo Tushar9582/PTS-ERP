@@ -37,13 +37,10 @@ const Customers = ({ onSelectCustomer }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Prevent empty name submission
     if (!formData.name.trim()) {
       Swal.fire("Error!", "Customer name is required!", "error");
       return;
     }
-
     try {
       await push(ref(db, "customers"), formData);
       Swal.fire("Success!", "Customer added successfully!", "success");
@@ -57,14 +54,11 @@ const Customers = ({ onSelectCustomer }) => {
 
   return (
     <div className="container-fluid bg-light py-2 px-1 px-md-3">
-    <main className="main-content">
+      <main className="main-content">
         <div className="bg-white p-4 shadow rounded">
           <div className="d-flex justify-content-between align-items-center mb-3">
             <h2 className="fs-3 fw-bold">Clients List</h2>
-            <button
-              className="btn btn-primary"
-              onClick={() => setIsFormOpen(true)}
-            >
+            <button className="btn btn-primary" onClick={() => setIsFormOpen(true)}>
               Add Clients
             </button>
           </div>
@@ -73,13 +67,11 @@ const Customers = ({ onSelectCustomer }) => {
             <table className="table table-bordered">
               <thead className="table-light">
                 <tr>
-                  {["Name", "Email", "Phone", "Address", "Company"].map(
-                    (heading) => (
-                      <th key={heading} className="text-center">
-                        {heading}
-                      </th>
-                    )
-                  )}
+                  {["Name", "Email", "Phone", "Address", "Company"].map((heading) => (
+                    <th key={heading} className="text-center">
+                      {heading}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
@@ -110,16 +102,22 @@ const Customers = ({ onSelectCustomer }) => {
         </div>
       </main>
 
+      {/* Overlapping form panel */}
       {isFormOpen && (
         <div
           className="position-fixed top-0 end-0 vh-100 bg-white shadow p-4"
-          style={{ width: "350px", marginRight: "20px" }}
+          style={{
+            width: "350px",
+            zIndex: 1050,
+            transition: "transform 0.3s ease-in-out",
+            transform: isFormOpen ? "translateX(0)" : "translateX(100%)",
+          }}
         >
           <button
-            className="btn-close position-absolute top-2 end-2"
+            className="btn-close position-absolute top-0 end-0 m-3"
             onClick={() => setIsFormOpen(false)}
           ></button>
-          <h2 className="fs-3 fw-bold mb-3">Add New Clients</h2>
+          <h2 className="fs-3 fw-bold mb-3 mt-4">Add New Clients</h2>
 
           <form className="row g-3" onSubmit={handleSubmit}>
             {[
@@ -135,10 +133,9 @@ const Customers = ({ onSelectCustomer }) => {
                   type={type}
                   name={name}
                   className="form-control"
-                  value={formData[name]} // Controlled input
+                  value={formData[name]}
                   onChange={handleChange}
                   required
-                  style={{ border: "1px solid black" }}
                 />
               </div>
             ))}

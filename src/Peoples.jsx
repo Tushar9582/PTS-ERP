@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { ref, push, onValue } from "firebase/database";
-import { db } from './firebase'; // Import Firebase db
+import { db } from './firebase'; // Firebase config
 import './People.css';
-
 
 const Peoples = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -16,7 +15,7 @@ const Peoples = () => {
     email: ''
   });
 
-  // Fetch people data from Firebase on component mount
+  // Fetch people from Firebase
   useEffect(() => {
     const peopleRef = ref(db, 'people');
     onValue(peopleRef, (snapshot) => {
@@ -33,13 +32,13 @@ const Peoples = () => {
     });
   }, []);
 
-  // Handle input changes for the form
+  // Input change handler
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setNewPerson({ ...newPerson, [name]: value });
   };
 
-  // Handle form submission
+  // Form submit
   const handleSubmit = (e) => {
     e.preventDefault();
     const peopleRef = ref(db, 'people');
@@ -56,24 +55,22 @@ const Peoples = () => {
 
   return (
     <div className="container-fluid bg-light py-2 px-1 px-md-3">
-    <main className="main-content">
-  
+      <main className="main-content">
         <div className="bg-white p-4 shadow rounded">
           <div className="d-flex justify-content-between align-items-center mb-3">
             <h2 className="fs-3 fw-bold">People List</h2>
             <div className="d-flex flex-column flex-md-row gap-2 w-100">
-  <input
-    type="text"
-    className="form-control"
-    placeholder="Search..."
-    style={{ maxWidth: "250px" }}
-  />
-  <button className="btn btn-outline-secondary">Refresh</button>
-  <button className="btn btn-primary" onClick={() => setIsFormOpen(true)}>
-    Add New Person
-  </button>
-</div>
-
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Search..."
+                style={{ maxWidth: "250px" }}
+              />
+              <button className="btn btn-outline-secondary">Refresh</button>
+              <button className="btn btn-primary" onClick={() => setIsFormOpen(true)}>
+                Add New Person
+              </button>
+            </div>
           </div>
 
           <div className="table-responsive">
@@ -107,98 +104,58 @@ const Peoples = () => {
         </div>
       </main>
 
-      {/* Add New Person Form */}
-      <div
-        className={"position-fixed top-0 end-0 bg-white shadow p-4 " + (isFormOpen ? "translate-0" : "translate-100")}
-        style={{
-          width: "350px",
-          height: "100vh",
-          overflowY: "auto",
-          marginRight: "20px",
-          transform: isFormOpen ? "translateX(0)" : "translateX(100%)",
-          transition: "transform 0.3s ease-in-out",
-        }}
-      >
-        <button className="btn-close position-absolute top-2 end-2" onClick={() => setIsFormOpen(false)}></button>
-        <h2 className="fs-3 fw-bold mb-3">Add New Person</h2>
+      {/* CRM-Style Add New Person Panel */}
+      {isFormOpen && (
+        <div
+          className="position-fixed top-0 end-0 vh-100 bg-white shadow p-4"
+          style={{
+            width: "350px",
+            zIndex: 1050,
+            transition: "transform 0.3s ease-in-out",
+            transform: isFormOpen ? "translateX(0)" : "translateX(100%)"
+          }}
+        >
+          <button
+            className="btn-close position-absolute top-0 end-0 m-3"
+            onClick={() => setIsFormOpen(false)}
+          ></button>
+          <h2 className="fs-3 fw-bold mb-3 mt-4">Add New Person</h2>
 
-        <form className="row g-3" onSubmit={handleSubmit}>
-          {/* Name */}
-          <div className="col-12">
-            <label className="form-label">Name *</label>
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Enter Name"
-              name="name"
-              value={newPerson.name}
-              onChange={handleInputChange}
-              required
-              style={{ border: '1px solid #ccc', borderRadius: '4px', padding: '8px' }}
-            />
-          </div>
-
-          {/* Company */}
-          <div className="col-12">
-            <label className="form-label">Company</label>
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Search Company"
-              name="company"
-              value={newPerson.company}
-              onChange={handleInputChange}
-              style={{ border: '1px solid #ccc', borderRadius: '4px', padding: '8px' }}
-            />
-          </div>
-
-          {/* Country */}
-          <div className="col-12">
-            <label className="form-label">Country</label>
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Enter Country"
-              name="country"
-              value={newPerson.country}
-              onChange={handleInputChange}
-              style={{ border: '1px solid #ccc', borderRadius: '4px', padding: '8px' }}
-            />
-          </div>
-
-          {/* Phone */}
-          <div className="col-12">
-            <label className="form-label">Phone</label>
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Enter Phone"
-              name="phone"
-              value={newPerson.phone}
-              onChange={handleInputChange}
-              style={{ border: '1px solid #ccc', borderRadius: '4px', padding: '8px' }}
-            />
-          </div>
-
-          {/* Email */}
-          <div className="col-12">
-            <label className="form-label">Email</label>
-            <input
-              type="email"
-              className="form-control"
-              placeholder="Enter Email"
-              name="email"
-              value={newPerson.email}
-              onChange={handleInputChange}
-              style={{ border: '1px solid #ccc', borderRadius: '4px', padding: '8px' }}
-            />
-          </div>
-
-          <div className="col-12">
-            <button type="submit" className="btn btn-primary w-100">Submit</button>
-          </div>
-        </form>
-      </div>
+          <form className="row g-3" onSubmit={handleSubmit}>
+            {[
+              { label: "Name", name: "name", type: "text", placeholder: "Enter Name" },
+              { label: "Company", name: "company", type: "text", placeholder: "Enter Company" },
+              { label: "Country", name: "country", type: "text", placeholder: "Enter Country" },
+              { label: "Phone", name: "phone", type: "text", placeholder: "Enter Phone" },
+              { label: "Email", name: "email", type: "email", placeholder: "Enter Email" },
+            ].map(({ label, name, type, placeholder }) => (
+              <div className="col-12" key={name}>
+                <label className="form-label">{label}</label>
+                <input
+                  type={type}
+                  name={name}
+                  placeholder={placeholder}
+                  className="form-control"
+                  value={newPerson[name]}
+                  onChange={handleInputChange}
+                  required={name === "name"}
+                  style={{
+                    border: '1px solid #ccc',
+                    borderRadius: '8px',
+                    padding: '10px',
+                    fontSize: '14px'
+                  }}
+                />
+              </div>
+            ))}
+            <div className="col-12">
+              <button type="submit" className="btn btn-primary w-100 py-2">
+                Submit
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 };

@@ -138,3 +138,149 @@
     margin-bottom: 0.5rem;
   }
 }
+
+/* ............ */
+
+.dark-mode {
+  background-color: #1e1e1e !important;
+  color: #f5f5f5;
+}
+
+.dark-mode .bg-white,
+.bg-dark {
+  background-color: #2e2e2e !important;
+  color: #f5f5f5;
+}
+
+.dark-mode .table {
+  color: #fff;
+}
+
+.dark-mode .form-control {
+  background-color: #333;
+  color: #fff;
+  border-color: #555;
+}
+
+.dark-mode .form-control::placeholder {
+  color: #ccc;
+}
+
+.dark-mode .modal-content {
+  background-color: #2e2e2e;
+  color: #fff;
+  border: 1px solid #444;
+}
+
+.dark-mode .btn-close {
+  filter: invert(1);
+}
+
+/* General dark mode */
+.dark-mode {
+  background-color: #1e1e1e;
+  color: #f1f1f1;
+}
+
+/* Modal overlay */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Modal content */
+.modal-content {
+  background-color: #ffffff;
+  padding: 2rem;
+  border-radius: 0.5rem;
+  max-width: 600px;
+  width: 100%;
+  position: relative;
+  z-index: 1001;
+}
+
+.dark-mode .modal-content {
+  background-color: #2b2b2b !important;
+  color: #f1f1f1;
+}
+
+/* Form input styling */
+.dark-mode .form-control {
+  background-color: #2d2d2d !important;
+  color: #f1f1f1 !important;
+  border: 1px solid #555;
+}
+
+.dark-mode .form-label {
+  color: #f1f1f1;
+}
+
+/* Buttons close icon */
+.dark-mode .btn-close {
+  filter: invert(1);
+}
+
+/* Table styling */
+.dark-mode .table {
+  background-color: #2e2e2e;
+  color: #f1f1f1;
+}
+
+.dark-mode .table th,
+.dark-mode .table td {
+  border-color: #444 !important;
+}
+
+.dark-mode .table th {
+  background-color: #333 !important;
+  color: #f1f1f1 !important;
+}
+
+.dark-mode .table tbody tr:hover {
+  background-color: #444 !important;
+}
+
+.dark-mode .table td {
+  background-color: #2e2e2e;
+  color: #f1f1f1;
+}
+
+/* Buttons */
+.dark-mode .btn {
+  background-color: #555 !important;
+  color: #f1f1f1;
+  border: 1px solid #444;
+}
+
+.dark-mode .btn:hover {
+  background-color: #666 !important;
+}
+
+/* Table container */
+.table-container {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+/* Transitions for smooth appearance */
+body,
+.modal-content,
+.table,
+.form-control,
+input,
+button {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Prevent pointer issue with file input */
+input[type="file"] {
+  cursor: pointer;
+}

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { ref, push, onValue } from "firebase/database";
 import { db } from './firebase';
+import './ProductsCategory.css';
+
 
 const ProductsCategory = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
