@@ -12,7 +12,13 @@ const Leads = () => {
   const { darkMode } = useContext(DarkModeContext);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [leads, setLeads] = useState([]);
-  const [formData, setFormData] = useState({ name: "", email: "", branch: "", type: "", phone: "" });
+  const [formData, setFormData] = useState({ 
+    name: "", 
+    email: "", 
+    branch: "", 
+    type: "", 
+    phone: "" 
+  });
   const [excelLoading, setExcelLoading] = useState(false);
   const [uploadLoading, setUploadLoading] = useState(false);
   const [previewData, setPreviewData] = useState([]);
@@ -20,53 +26,68 @@ const Leads = () => {
   const [selectedLeads, setSelectedLeads] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
 
+  // Fetch leads from Firebase
   useEffect(() => {
     const leadsRef = ref(db, "leads");
-    onValue(leadsRef, (snapshot) => {
+    const unsubscribe = onValue(leadsRef, (snapshot) => {
       const data = snapshot.val();
-      if (data) {
-        const leadsList = Object.keys(data).map((key) => ({ id: key, ...data[key] }));
-        setLeads(leadsList);
-      } else {
-        setLeads([]);
-      }
+      const leadsList = data ? Object.keys(data).map(key => ({ 
+        id: key, 
+        ...data[key] 
+      })) : [];
+      setLeads(leadsList);
     });
+    return () => unsubscribe();
   }, []);
 
+  // Handle select all toggle
   useEffect(() => {
-    setSelectedLeads(selectAll ? leads.map((l) => l.id) : []);
+    setSelectedLeads(selectAll ? leads.map(lead => lead.id) : []);
   }, [selectAll, leads]);
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await push(ref(db, "leads"), formData);
-    Swal.fire("Success", "Lead added successfully", "success");
-    setFormData({ name: "", email: "", branch: "", type: "", phone: "" });
-    setIsFormOpen(false);
+    try {
+      await push(ref(db, "leads"), formData);
+      Swal.fire("Success", "Lead added successfully", "success");
+      setFormData({ name: "", email: "", branch: "", type: "", phone: "" });
+      setIsFormOpen(false);
+    } catch (error) {
+      Swal.fire("Error", "Failed to add lead", "error");
+    }
   };
 
   const exportToExcel = () => {
-    if (!leads.length) return Swal.fire("No Data", "No leads to export", "info");
+    if (!leads.length) {
+      Swal.fire("Info", "No leads to export", "info");
+      return;
+    }
 
     setExcelLoading(true);
-    const data = leads.map((lead, index) => ({
-      "No.": index + 1,
-      Name: lead.name,
-      Email: lead.email,
-      Branch: lead.branch,
-      Type: lead.type,
-      Phone: lead.phone,
-    }));
+    try {
+      const data = leads.map((lead, index) => ({
+        "No.": index + 1,
+        Name: lead.name,
+        Email: lead.email,
+        Branch: lead.branch,
+        Type: lead.type,
+        Phone: lead.phone,
+      }));
 
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Leads");
-    XLSX.writeFile(wb, `leads_${Date.now()}.xlsx`);
-    setExcelLoading(false);
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Leads");
+      XLSX.writeFile(wb, `leads_${new Date().toISOString()}.xlsx`);
+    } catch (error) {
+      Swal.fire("Error", "Failed to export data", "error");
+    } finally {
+      setExcelLoading(false);
+    }
   };
 
   const handleFileUpload = (e) => {
@@ -75,97 +96,203 @@ const Leads = () => {
 
     setUploadLoading(true);
     const reader = new FileReader();
+
     reader.onload = (e) => {
-      const workbook = XLSX.read(new Uint8Array(e.target.result), { type: "array" });
-      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-      const jsonData = XLSX.utils.sheet_to_json(worksheet);
-      setPreviewData(jsonData.map((row, i) => ({ ...row, id: `temp-${i}` })));
-      setIsPreviewOpen(true);
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: "array" });
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+        if (!jsonData.length) {
+          Swal.fire("Error", "Excel file is empty", "error");
+          return;
+        }
+
+        const mappedData = jsonData.map((row, i) => ({
+          id: `temp-${i}`,
+          name: row.Name || row.name || "",
+          email: row.Email || row.email || "",
+          branch: row.Branch || row.branch || "",
+          type: row.Type || row.type || "",
+          phone: String(row.Phone || row.phone || "")
+        }));
+
+        setPreviewData(mappedData);
+        setIsPreviewOpen(true);
+      } catch (error) {
+        Swal.fire("Error", "Invalid Excel file format", "error");
+      } finally {
+        setUploadLoading(false);
+      }
+    };
+
+    reader.onerror = () => {
+      Swal.fire("Error", "Failed to read file", "error");
       setUploadLoading(false);
     };
+
     reader.readAsArrayBuffer(file);
   };
 
   const confirmUpload = async () => {
+    if (!previewData.length) return;
+
     setUploadLoading(true);
-    await Promise.all(previewData.map((lead) => {
-      const newRef = push(ref(db, "leads"));
-      return set(newRef, lead);
-    }));
-    Swal.fire("Success", "Excel data uploaded", "success");
-    setUploadLoading(false);
-    setPreviewData([]);
-    setIsPreviewOpen(false);
+    try {
+      const validLeads = previewData.filter(lead => 
+        lead.name && lead.email && lead.branch && lead.type && lead.phone
+      );
+
+      if (!validLeads.length) {
+        Swal.fire("Error", "No valid leads to upload", "error");
+        return;
+      }
+
+      await Promise.all(
+        validLeads.map(lead => {
+          const { name, email, branch, type, phone } = lead;
+          return push(ref(db, "leads"), { name, email, branch, type, phone });
+        })
+      );
+
+      Swal.fire("Success", `${validLeads.length} leads uploaded`, "success");
+      setIsPreviewOpen(false);
+      setPreviewData([]);
+    } catch (error) {
+      Swal.fire("Error", "Upload failed", "error");
+    } finally {
+      setUploadLoading(false);
+    }
   };
 
   const handleDeleteLead = async (id) => {
-    const confirm = await Swal.fire({ title: "Delete?", showCancelButton: true, confirmButtonText: "Yes" });
-    if (confirm.isConfirmed) {
-      await remove(ref(db, `leads/${id}`));
-      Swal.fire("Deleted!", "Lead removed", "success");
+    const result = await Swal.fire({
+      title: "Confirm Delete",
+      text: "Are you sure you want to delete this lead?",
+      icon: "warning",
+      showCancelButton: true
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await remove(ref(db, `leads/${id}`));
+        Swal.fire("Deleted", "Lead removed successfully", "success");
+      } catch (error) {
+        Swal.fire("Error", "Failed to delete lead", "error");
+      }
     }
   };
 
   const handleBulkDelete = async () => {
-    const confirm = await Swal.fire({ title: `Delete ${selectedLeads.length} leads?`, showCancelButton: true });
-    if (confirm.isConfirmed) {
-      await Promise.all(selectedLeads.map((id) => remove(ref(db, `leads/${id}`))));
-      setSelectedLeads([]);
-      setSelectAll(false);
-      Swal.fire("Deleted!", "Selected leads removed", "success");
+    if (!selectedLeads.length) return;
+
+    const result = await Swal.fire({
+      title: `Delete ${selectedLeads.length} leads?`,
+      text: "This action cannot be undone",
+      icon: "warning",
+      showCancelButton: true
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await Promise.all(
+          selectedLeads.map(id => remove(ref(db, `leads/${id}`)))
+        );
+        setSelectedLeads([]);
+        setSelectAll(false);
+        Swal.fire("Deleted", "Selected leads removed", "success");
+      } catch (error) {
+        Swal.fire("Error", "Failed to delete leads", "error");
+      }
     }
   };
 
   const handleWhatsAppClick = (phone) => {
-    const clean = phone.replace(/^\+|^00/, "").replace(/\D/g, "");
-    window.open(`https://wa.me/${clean}`, "_blank");
+    const cleanPhone = phone.replace(/\D/g, "");
+    if (cleanPhone) {
+      window.open(`https://wa.me/${cleanPhone}`, "_blank");
+    }
+  };
+
+  const toggleSelect = (id) => {
+    setSelectedLeads(prev => 
+      prev.includes(id) 
+        ? prev.filter(leadId => leadId !== id) 
+        : [...prev, id]
+    );
   };
 
   return (
     <div className={`responsive-container ${darkMode ? "dark-mode" : ""}`}>
-      <main className="flex-grow-1 p-md-4">
-        <div className={`p-3 p-md-4 shadow rounded ${darkMode ? "bg-dark text-light" : "bg-white"}`}>
-          <div className="d-flex justify-content-between mb-3">
-            <h2>Lead List</h2>
-            <div className="d-flex gap-2 flex-wrap">
-              <button className="btn btn-primary" onClick={() => setIsFormOpen(true)}>Add New Lead</button>
-              <button className="btn btn-danger" onClick={handleBulkDelete} disabled={!selectedLeads.length}>Delete Selected</button>
-              <button className="btn btn-success" onClick={exportToExcel}>
-                {excelLoading ? "Exporting..." : "Export to Excel"}
-              </button>
-              <div className="btn btn-primary position-relative">
-                {uploadLoading ? (
-                  "Loading..."
-                ) : (
-                  <>
-                    Upload Excel
-                    <input type="file" accept=".xlsx,.xls,.csv"
-                      onChange={handleFileUpload}
-                      className="position-absolute top-0 start-0 w-100 h-100 opacity-0" />
-                  </>
-                )}
-              </div>
-            </div>
+      <div className={`card ${darkMode ? "bg-dark" : "bg-white"}`}>
+        <div className="card-header d-flex justify-content-between align-items-center">
+          <h2 className="mb-0">Leads Management</h2>
+          <div className="d-flex gap-2 flex-wrap">
+            <button 
+              className="btn btn-primary"
+              onClick={() => setIsFormOpen(true)}
+            >
+              Add Lead
+            </button>
+            <button
+              className="btn btn-danger"
+              onClick={handleBulkDelete}
+              disabled={!selectedLeads.length}
+            >
+              Delete Selected
+            </button>
+            <button
+              className="btn btn-success"
+              onClick={exportToExcel}
+              disabled={excelLoading}
+            >
+              {excelLoading ? "Exporting..." : "Export Excel"}
+            </button>
+            <label className="btn btn-info mb-0 position-relative">
+              {uploadLoading ? "Processing..." : "Import Excel"}
+              <input
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                onChange={handleFileUpload}
+                className="position-absolute top-0 start-0 w-100 h-100 opacity-0"
+                disabled={uploadLoading}
+              />
+            </label>
           </div>
+        </div>
 
-          <div className="table-responsive">
-            <table className={`table table-bordered ${darkMode ? "table-dark" : "table-light"}`}>
-              <thead className={darkMode ? "table-secondary" : "table-light"}>
-                <tr>
-                  <th><input type="checkbox" checked={selectAll} onChange={() => setSelectAll(!selectAll)} /></th>
-                  <th>#</th>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Branch</th>
-                  <th>Type</th>
-                  <th>Phone</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {leads.map((lead, index) => (
+        <div className="card-body table-container">
+          <table className={`table table-hover ${darkMode ? "table-dark" : ""}`}>
+            <thead>
+              <tr>
+                <th>
+                  <input
+                    type="checkbox"
+                    checked={selectAll && leads.length > 0}
+                    onChange={() => setSelectAll(!selectAll)}
+                  />
+                </th>
+                <th>#</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Branch</th>
+                <th>Type</th>
+                <th>Phone</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {leads.length > 0 ? (
+                leads.map((lead, index) => (
                   <tr key={lead.id}>
-                    <td><input type="checkbox" checked={selectedLeads.includes(lead.id)} onChange={() => toggleSelect(lead.id)} /></td>
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={selectedLeads.includes(lead.id)}
+                        onChange={() => toggleSelect(lead.id)}
+                      />
+                    </td>
                     <td>{index + 1}</td>
                     <td>{lead.name}</td>
                     <td>{lead.email}</td>
@@ -173,60 +300,141 @@ const Leads = () => {
                     <td>{lead.type}</td>
                     <td>{lead.phone}</td>
                     <td>
-                      <button className="btn btn-success btn-sm" onClick={() => handleWhatsAppClick(lead.phone)}><FaWhatsapp /></button>
-                      <button className="btn btn-danger btn-sm" onClick={() => handleDeleteLead(lead.id)}><FaTrash /></button>
+                      <button
+                        className="btn btn-sm btn-success me-1"
+                        onClick={() => handleWhatsAppClick(lead.phone)}
+                        disabled={!lead.phone}
+                      >
+                        <FaWhatsapp />
+                      </button>
+                      <button
+                        className="btn btn-sm btn-danger"
+                        onClick={() => handleDeleteLead(lead.id)}
+                      >
+                        <FaTrash />
+                      </button>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="8" className="text-center py-4">
+                    No leads found
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
-      </main>
+      </div>
 
-      {/* Modal for adding lead */}
+      {/* Add Lead Modal */}
       {isFormOpen && (
         <div className="modal-overlay">
-          <div className={`modal-content ${darkMode ? "bg-dark text-light" : ""}`}>
-            <button className="btn-close position-absolute top-0 end-0 m-2" onClick={() => setIsFormOpen(false)}></button>
-            <h2>Add New Lead</h2>
-            <form onSubmit={handleSubmit}>
-              {["name", "email", "branch", "type", "phone"].map((field) => (
-                <div className="mb-3" key={field}>
-                  <label className="form-label">{field}</label>
-                  <input
-                    className={`form-control ${darkMode ? "bg-dark text-light border-secondary" : ""}`}
-                    name={field}
-                    type="text"
-                    value={formData[field]}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-              ))}
-              <button className="btn btn-primary w-100">Add Lead</button>
-            </form>
+          <div className={`modal-content ${darkMode ? "bg-dark" : ""}`}>
+            <div className="modal-header">
+              <h5 className="modal-title">Add New Lead</h5>
+              <button
+                type="button"
+                className="btn-close"
+                onClick={() => setIsFormOpen(false)}
+                aria-label="Close"
+              />
+            </div>
+            <div className="modal-body">
+              <form onSubmit={handleSubmit}>
+                {['name', 'email', 'branch', 'type', 'phone'].map(field => (
+                  <div className="mb-3" key={field}>
+                    <label className="form-label">
+                      {field.charAt(0).toUpperCase() + field.slice(1)}
+                    </label>
+                    <input
+                      type={field === 'email' ? 'email' : 'text'}
+                      className={`form-control ${darkMode ? "bg-dark text-light" : ""}`}
+                      name={field}
+                      value={formData[field]}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                ))}
+                <button type="submit" className="btn btn-primary w-100">
+                  Submit
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Preview Modal */}
+      {/* Excel Preview Modal */}
       {isPreviewOpen && (
         <div className="modal-overlay">
-          <div className={`modal-content ${darkMode ? "bg-dark text-light" : ""}`}>
-            <button className="btn-close position-absolute top-0 end-0 m-2" onClick={() => setIsPreviewOpen(false)}></button>
-            <h2>Preview Excel Data</h2>
-            <table className={`table ${darkMode ? "table-dark" : "table-light"}`}>
-              <thead><tr><th>#</th><th>Name</th><th>Email</th><th>Branch</th><th>Type</th><th>Phone</th></tr></thead>
-              <tbody>
-                {previewData.map((lead, index) => (
-                  <tr key={index}><td>{index + 1}</td><td>{lead.name}</td><td>{lead.email}</td><td>{lead.branch}</td><td>{lead.type}</td><td>{lead.phone}</td></tr>
-                ))}
-              </tbody>
-            </table>
-            <button className="btn btn-success w-100 mt-3" onClick={confirmUpload} disabled={uploadLoading}>
-              {uploadLoading ? "Uploading..." : "Confirm Upload"}
-            </button>
+          <div className={`modal-content ${darkMode ? "bg-dark" : ""}`}>
+            <div className="modal-header">
+              <h5 className="modal-title">
+                Preview Data ({previewData.length} records)
+              </h5>
+              <button
+                type="button"
+                className="btn-close"
+                onClick={() => setIsPreviewOpen(false)}
+                aria-label="Close"
+              />
+            </div>
+            <div className="modal-body table-container">
+              <table className={`table ${darkMode ? "table-dark" : ""}`}>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Branch</th>
+                    <th>Type</th>
+                    <th>Phone</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {previewData.map((lead, index) => (
+                    <tr key={lead.id}>
+                      <td>{index + 1}</td>
+                      <td className={!lead.name ? "text-danger" : ""}>
+                        {lead.name || "Missing"}
+                      </td>
+                      <td className={!lead.email ? "text-danger" : ""}>
+                        {lead.email || "Missing"}
+                      </td>
+                      <td className={!lead.branch ? "text-danger" : ""}>
+                        {lead.branch || "Missing"}
+                      </td>
+                      <td className={!lead.type ? "text-danger" : ""}>
+                        {lead.type || "Missing"}
+                      </td>
+                      <td className={!lead.phone ? "text-danger" : ""}>
+                        {lead.phone || "Missing"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setIsPreviewOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={confirmUpload}
+                disabled={uploadLoading}
+              >
+                {uploadLoading ? "Uploading..." : "Confirm Upload"}
+              </button>
+            </div>
           </div>
         </div>
       )}

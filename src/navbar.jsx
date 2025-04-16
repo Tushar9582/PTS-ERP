@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { 
   FaBars, FaTachometerAlt, FaFileInvoiceDollar, FaMoneyBillWave, 
-  FaClipboardList, FaBuilding, FaTags, FaBox, FaChartPie, FaCog,
+  FaClipboardList, FaBuilding, FaTags, FaBox, FaChartPie, FaCog,FaComments,
   FaMoon, FaSun
 } from "react-icons/fa";
 import { DarkModeContext } from "./DarkModeContext";
@@ -95,9 +95,24 @@ const Navbar = () => {
               className="nav-item"
               onClick={handleNavLinkClick}
             >
-              <FaClipboardList size={18} /> Leads
+             <FaClipboardList size={18} /> Leads
             </Link>
           </li>
+
+
+          <li className={location.pathname === "/chatbox" ? "active" : ""}>
+  <Link 
+    to="/chatbox" 
+    className="nav-item"
+    onClick={handleNavLinkClick}
+  >
+   <FaComments size={18} />ChatBox
+  </Link>
+</li>
+
+
+
+
           <li className={location.pathname === "/customform" ? "active" : ""}>
             <Link 
               to="/customform" 

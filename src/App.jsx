@@ -21,7 +21,7 @@ import Reports from "./Reports";
 import Settings from "./Settings";
 import CustomForm from "./CustomForm";
 import { DarkModeProvider } from "./DarkModeContext"; // Import the DarkModeProvider
-
+import Chatbox from "./Chatbox";
 function App() {
   const [user, setUser] = useState(null);
 
@@ -62,6 +62,7 @@ function App() {
                       <Route path="/expenses-category" element={<ExpensesCategory />} />
                       <Route path="/reports" element={<Reports />} />
                       <Route path="customform" element={<CustomForm/>} />
+                      <Route path="/chatbox" element={<Chatbox />} />
                       <Route
                         path="/settings"
                         element={<Settings logout={signOut} />}
