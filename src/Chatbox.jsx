@@ -1,5 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
-import { FaRobot, FaPaperPlane, FaSpinner } from "react-icons/fa";
+import {
+  FaRobot,
+  FaPaperPlane,
+  FaSpinner,
+  FaMicrophone,
+  FaMicrophoneSlash,
+} from "react-icons/fa";
 import { ref, push } from "firebase/database";
 import { db } from "./firebase";
 import { useDarkMode } from "./DarkModeContext";
@@ -10,267 +16,367 @@ const Chatbox = ({ onAddPerson }) => {
   const [messages, setMessages] = useState([
     {
       sender: "bot",
-      text: "Hi, I'm your assistant. Would you like to add a new person? (Type 'add person' or similar)",
-      type: "greeting"
-    }
+      text: "Hello! I'm your assistant. How would you like to add people?",
+      type: "greeting",
+    },
+    {
+      sender: "bot",
+      text: "Please choose an option:\n1. Command mode (quick format)\n2. Voice mode\n3. Chat mode (step-by-step)",
+      type: "mode-selection",
+    },
   ]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [currentFieldIndex, setCurrentFieldIndex] = useState(null);
-  const [newPerson, setNewPerson] = useState({
+  const [isListening, setIsListening] = useState(false);
+  const [availableMics, setAvailableMics] = useState([]);
+  const [selectedMic, setSelectedMic] = useState("");
+  const [showMicDropdown, setShowMicDropdown] = useState(false);
+  const [interactionMode, setInteractionMode] = useState(null);
+  const [currentStep, setCurrentStep] = useState(null);
+  const [collectedData, setCollectedData] = useState({
     name: "",
     company: "",
     country: "",
     phone: "",
-    email: ""
+    email: "",
   });
+
+  const recognitionRef = useRef(null);
   const messagesEndRef = useRef(null);
 
-  const fields = [
-    { key: "name", question: "What's the person's name?" },
-    { key: "company", question: "Which company do they work for?" },
-    { key: "country", question: "Which country are they from?" },
-    { key: "phone", question: "What's their phone number?" },
-    { key: "email", question: "What's their email address?" }
-  ];
+  useEffect(() => {
+    const initVoiceRecognition = async () => {
+      if ("SpeechRecognition" in window || "webkitSpeechRecognition" in window) {
+        const SpeechRecognition =
+          window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognitionRef.current = new SpeechRecognition();
+        recognitionRef.current.continuous = false;
+        recognitionRef.current.interimResults = false;
+        recognitionRef.current.lang = "en-US";
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+        recognitionRef.current.onresult = (event) => {
+          const transcript = event.results[0][0].transcript;
+          setInput(transcript);
+          handleSend(transcript);
+        };
+
+        recognitionRef.current.onerror = (event) => {
+          addBotMessage("Sorry, I couldn't understand that. Please try again.", "error");
+          setIsListening(false);
+        };
+
+        recognitionRef.current.onend = () => {
+          setIsListening(false);
+          if (interactionMode === "voice") {
+            addBotMessage("Would you like to say another command? (yes/no)");
+          }
+        };
+      }
+
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const mics = devices.filter((device) => device.kind === "audioinput");
+        setAvailableMics(mics);
+        if (mics.length > 0) {
+          setSelectedMic(mics[0].deviceId);
+        }
+      } catch (error) {
+        console.error("Error getting microphone devices:", error);
+      }
+    };
+
+    initVoiceRecognition();
+  }, [interactionMode]);
 
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSend = async () => {
-    const userInput = input.trim();
+  const handleSend = async (text = input) => {
+    const userInput = text.trim();
     if (!userInput) return;
 
-    // Add user message
-    setMessages(prev => [...prev, { sender: "user", text: userInput }]);
+    setMessages((prev) => [...prev, { sender: "user", text: userInput }]);
     setInput("");
     setIsTyping(true);
 
-    // Process input
-    await processInput(userInput);
+    if (!interactionMode) {
+      await handleModeSelection(userInput.toLowerCase());
+    } else {
+      switch (interactionMode) {
+        case "command":
+        case "voice":
+          await processCommandInput(userInput);
+          break;
+        case "chat":
+          await processChatInput(userInput);
+          break;
+      }
+    }
 
     setIsTyping(false);
   };
 
-  const processInput = async (userInput) => {
-    // Check if we're in the middle of adding a person
-    if (currentFieldIndex !== null) {
-      await handleFieldResponse(userInput);
-      return;
-    }
-
-    // Check if user wants to add a person
-    if (userInput.toLowerCase().includes("add person") || 
-        userInput.toLowerCase().includes("new person") ||
-        userInput.toLowerCase().includes("yes")) {
-      startAddPersonFlow();
-      return;
-    }
-
-    // Try natural language processing
-    if (await tryNaturalLanguageProcessing(userInput)) {
-      return;
-    }
-
-    // Default response
-    addBotMessage("I can help you add new people. Type 'add person' to get started or just tell me the details like: 'John Doe from Acme Inc, USA, phone 555-1234, email john@acme.com'");
-  };
-
-  const startAddPersonFlow = () => {
-    setNewPerson({ name: "", company: "", country: "", phone: "", email: "" });
-    setCurrentFieldIndex(0);
-    addBotMessage(fields[0].question);
-  };
-
-  const handleFieldResponse = async (response) => {
-    const currentField = fields[currentFieldIndex].key;
-    const updatedPerson = { ...newPerson, [currentField]: response };
-    setNewPerson(updatedPerson);
-
-    // Move to next field or complete if all fields are done
-    if (currentFieldIndex < fields.length - 1) {
-      const nextFieldIndex = currentFieldIndex + 1;
-      setCurrentFieldIndex(nextFieldIndex);
-      addBotMessage(fields[nextFieldIndex].question);
+  const handleModeSelection = async (input) => {
+    if (input.includes("1") || input.includes("command")) {
+      setInteractionMode("command");
+      addBotMessage("Command mode selected. You can enter details in format: 'Name Company Country Phone Email'");
+      addBotMessage("Example: 'John Doe TechWave USA 5551234567 john@techwave.com'");
+    } else if (input.includes("2") || input.includes("voice")) {
+      setInteractionMode("voice");
+      addBotMessage("Voice mode selected. Please click the microphone and speak clearly.");
+    } else if (input.includes("3") || input.includes("chat")) {
+      setInteractionMode("chat");
+      startChatMode();
     } else {
-      await completePersonAddition(updatedPerson);
+      addBotMessage("Please select a valid option (1, 2, or 3)");
     }
   };
 
-  const completePersonAddition = async (personData) => {
+  const startChatMode = () => {
+    setCurrentStep("name");
+    addBotMessage("Let's add a new person step by step. What's their full name?");
+  };
+
+  const processCommandInput = async (input) => {
     try {
-      // Validate required fields
-      if (!personData.name || !personData.email) {
-        addBotMessage("Please provide at least name and email to add a person.", "error");
-        startAddPersonFlow();
-        return;
+      const parsed = trySpaceSeparatedParsing(input) || tryNaturalLanguageProcessing(input);
+      
+      if (parsed) {
+        if (!parsed.name || !parsed.email) {
+          throw new Error("Name and email are required");
+        }
+        await saveData(parsed);
+      } else {
+        throw new Error("Invalid format");
       }
-
-      // Add to Firebase
-      const peopleRef = ref(db, 'people');
-      await push(peopleRef, personData);
-      
-      // Update UI
-      addBotMessage(`✅ Successfully added ${personData.name} to the people list!`, "success");
-      setCurrentFieldIndex(null);
-      
-      // Notify parent component if needed
-      if (onAddPerson) onAddPerson(personData);
-      
-      // Offer next action
-      setTimeout(() => {
-        addBotMessage("Would you like to add another person? (yes/no)", "question");
-      }, 1000);
     } catch (error) {
-      addBotMessage("❌ Failed to add person. Please try again.", "error");
-      console.error("Error adding person:", error);
-      setCurrentFieldIndex(null);
+      addBotMessage(`❌ ${error.message || "Failed to save. Please check your input format."}`, "error");
+      addBotMessage("Correct format: Name Company Country Phone Email\nExample: John Doe TechWave USA 5551234567 john@techwave.com");
     }
   };
 
-  const tryNaturalLanguageProcessing = async (input) => {
-    // Skip NLP if we're in the middle of a guided flow
-    if (currentFieldIndex !== null) return false;
+  const trySpaceSeparatedParsing = (input) => {
+    const parts = input.trim().split(/\s+/);
+    if (parts.length >= 5) {
+      const email = parts.pop();
+      if (!validateEmail(email)) return null;
+      
+      const phone = parts.pop();
+      const country = parts.pop();
+      const company = parts.pop();
+      const name = parts.join(" ");
+      
+      return { name, company, country, phone, email };
+    }
+    return null;
+  };
 
-    // Enhanced natural language parsing
-    const nameMatch = input.match(/(?:add|create)?\s([a-zA-Z\s]+?)(?:\sfrom|\sat|\swith|,|$)/i);
-    const companyMatch = input.match(/(?:company\s)?(?:is\s)?(?:from\s|at\s|works?\s)?([a-zA-Z0-9\s&.,]+?)(?:\sbased|\sin|,|$)/i);
-    const countryMatch = input.match(/(?:country\s)?(?:is\s)?(?:in\s|from\s)?([a-zA-Z\s]+?)(?:\sphone|,|$)/i);
-    const phoneMatch = input.match(/(?:phone\s)?(?:is\s)?(\+?[\d\s-]{7,})(?:\semail|,|$)/i);
-    const emailMatch = input.match(/(?:email\s)?(?:is\s)?([\w.-]+@[\w.-]+\.\w+)/i);
+  const validateEmail = (email) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
 
-    if (nameMatch || companyMatch || countryMatch || phoneMatch || emailMatch) {
-      const personData = {
-        name: nameMatch?.[1]?.trim() || "",
-        company: companyMatch?.[1]?.trim() || "",
-        country: countryMatch?.[1]?.trim() || "",
-        phone: phoneMatch?.[1]?.trim() || "",
-        email: emailMatch?.[1]?.trim() || ""
-      };
+  const tryNaturalLanguageProcessing = (input) => {
+    const patterns = [
+      /add\s(.+?)\sfrom\s(.+?)\s(?:in|from)\s(.+?)\sphone\s(.+?)\semail\s(.+)/i,
+      /^(.+?)\s(.+?)\s(.+?)\s(.+?)\s(.+)$/,
+      /create\scontact\s(.+?)\sat\s(.+?)\s(.+?)\s(.+?)\s(.+)/i,
+      /(.+?)\sworks?\sat\s(.+?)\sbased\sin\s(.+?)\scontact\s(.+?)\s(.+)/i
+    ];
 
-      // If we have all fields, complete the addition
-      if (personData.name && personData.email) {
-        await completePersonAddition(personData);
-        return true;
-      }
-
-      // If partial data, start guided flow for missing fields
-      const firstMissingFieldIndex = fields.findIndex(f => !personData[f.key]);
-      if (firstMissingFieldIndex !== -1) {
-        setNewPerson(personData);
-        setCurrentFieldIndex(firstMissingFieldIndex);
-        addBotMessage(`Thanks! ${fields[firstMissingFieldIndex].question}`);
-        return true;
+    for (const pattern of patterns) {
+      const match = input.match(pattern);
+      if (match) {
+        return {
+          name: match[1].trim(),
+          company: match[2].trim(),
+          country: match[3].trim(),
+          phone: match[4].trim(),
+          email: match[5].trim()
+        };
       }
     }
-
-    return false;
+    return null;
   };
 
-  const addBotMessage = (text, type = "message") => {
-    setMessages(prev => [...prev, { sender: "bot", text, type }]);
+  const processChatInput = async (input) => {
+    const step = currentStep;
+    const updatedData = { ...collectedData };
+
+    try {
+      switch (step) {
+        case "name":
+          if (!input.trim()) throw new Error("Name cannot be empty");
+          updatedData.name = input;
+          setCollectedData(updatedData);
+          setCurrentStep("company");
+          addBotMessage("What company do they work for?");
+          break;
+        case "company":
+          updatedData.company = input;
+          setCollectedData(updatedData);
+          setCurrentStep("country");
+          addBotMessage("Which country are they from?");
+          break;
+        case "country":
+          updatedData.country = input;
+          setCollectedData(updatedData);
+          setCurrentStep("phone");
+          addBotMessage("What is their phone number?");
+          break;
+        case "phone":
+          updatedData.phone = input;
+          setCollectedData(updatedData);
+          setCurrentStep("email");
+          addBotMessage("What is their email address?");
+          break;
+        case "email":
+          if (!validateEmail(input)) throw new Error("Invalid email format");
+          updatedData.email = input;
+          await saveData(updatedData);
+          setCollectedData({ name: "", company: "", country: "", phone: "", email: "" });
+          setCurrentStep("name");
+          addBotMessage("✅ Person saved successfully! Want to add another one? (yes/no)");
+          break;
+        default:
+          if (input.toLowerCase().startsWith("yes")) {
+            setCurrentStep("name");
+            addBotMessage("Great! What's the full name?");
+          } else {
+            addBotMessage("Alright, I'm ready when you are!");
+            setInteractionMode(null);
+          }
+          break;
+      }
+    } catch (error) {
+      addBotMessage(`❌ ${error.message}`, "error");
+      if (step === "email") {
+        addBotMessage("Please enter a valid email address:");
+      }
+    }
   };
 
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter") handleSend();
+  const addBotMessage = (text, type = "bot") => {
+    setMessages((prev) => [...prev, { sender: "bot", text, type }]);
+  };
+
+  const saveData = async (data) => {
+    try {
+      const peopleRef = ref(db, "people");
+      await push(peopleRef, data);
+      if (onAddPerson) onAddPerson(data);
+      return true;
+    } catch (error) {
+      console.error("Error saving data:", error);
+      throw new Error("Failed to save. Please try again.");
+    }
+  };
+
+  const toggleMic = () => {
+    if (!recognitionRef.current) {
+      addBotMessage("Voice recognition not supported in your browser", "error");
+      return;
+    }
+    
+    if (isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    } else {
+      if (!interactionMode) {
+        setInteractionMode("voice");
+      }
+      recognitionRef.current.start();
+      setIsListening(true);
+      addBotMessage("Listening... Please speak now", "info");
+    }
   };
 
   return (
-    <div className={`chatbox-container ${darkMode ? "dark" : "light"}`}>
-      <div className="max-w-4xl mx-auto flex flex-col h-full">
-        <div className="chat-header">
-          <div className="relative">
-            <FaRobot size={30} className="text-purple-400" />
-            {isTyping && (
-              <div className="absolute -top-2 -right-2 flex space-x-1">
-                <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+    <div className={`chatbox-container ${darkMode ? "dark" : ""}`}>
+      <div className="chatbox-header">
+        <div className="header-content">
+          <FaRobot className="bot-icon" />
+          <div className="header-text">
+            <h2>People Assistant</h2>
+            {interactionMode && (
+              <div className="mode-indicator">
+                {interactionMode.toUpperCase()} MODE
               </div>
             )}
           </div>
-          <h1>AI People Assistant</h1>
         </div>
+        {isListening && (
+          <div className="listening-indicator">
+            <div className="pulse-animation"></div>
+            <span>Listening...</span>
+          </div>
+        )}
+      </div>
 
-        <div className="messages-container">
-          {messages.map((msg, index) => (
-            <div
-              key={index}
-              className={`message ${
-                msg.sender === "user"
-                  ? "user-message"
-                  : msg.type === "success"
-                  ? "success-message"
-                  : msg.type === "error"
-                  ? "error-message"
-                  : "bot-message"
-              }`}
-            >
-              {msg.text}
-            </div>
-          ))}
-          {isTyping && (
-            <div className="typing-indicator">
-              <FaSpinner className="animate-spin mr-2" />
-              Typing...
-            </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-
-        <div className="flex flex-col gap-2">
-          {currentFieldIndex !== null && (
-            <div className={`field-tracker ${darkMode ? "dark" : "light"}`}>
-              Currently adding: {newPerson.name || "New Person"}
-              <div className="field-progress">
-                {fields.map((field, idx) => (
-                  <span
-                    key={field.key}
-                    className={
-                      idx < currentFieldIndex
-                        ? "bg-green-500 text-white"
-                        : idx === currentFieldIndex
-                        ? "bg-purple-500 text-white"
-                        : darkMode
-                        ? "bg-[#2c2c3e] text-white"
-                        : "bg-gray-300 text-black"
-                    }
-                  >
-                    {field.key}
-                  </span>
+      <div className="chatbox-messages">
+        {messages.map((msg, index) => (
+          <div key={index} className={`message ${msg.sender} ${msg.type || ""}`}>
+            <div className="message-content">
+              {msg.sender === "bot" && <FaRobot className="message-icon" />}
+              <div className="message-text">
+                {msg.text.split('\n').map((line, i) => (
+                  <React.Fragment key={i}>
+                    {line}
+                    <br />
+                  </React.Fragment>
                 ))}
               </div>
             </div>
-          )}
-          <div className="input-container">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyPress}
-              placeholder={
-                currentFieldIndex !== null
-                  ? `Enter ${fields[currentFieldIndex].key}...`
-                  : "Type your message or 'add person'..."
-              }
-              className={`chat-input ${darkMode ? "dark" : "light"}`}
-            />
-            <button
-              onClick={handleSend}
-              disabled={isTyping}
-              className="send-button"
-            >
-              <FaPaperPlane />
-            </button>
           </div>
-          <div className="helper-text">
-            Try: "Add John Doe from Acme Inc, USA" or just type the details separated by commas
+        ))}
+        {isTyping && (
+          <div className="message bot typing">
+            <div className="message-content">
+              <FaRobot className="message-icon" />
+              <div className="message-text">
+                <FaSpinner className="spin" /> Typing...
+              </div>
+            </div>
           </div>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      <div className="chatbox-input">
+        <input
+          type="text"
+          placeholder={
+            !interactionMode ? "Type 1, 2, or 3 to select mode" :
+            interactionMode === "command" ? "Enter: Name Company Country Phone Email" :
+            interactionMode === "chat" ? 
+              (currentStep === "name" ? "Enter full name" :
+               currentStep === "company" ? "Enter company" :
+               currentStep === "country" ? "Enter country" :
+               currentStep === "phone" ? "Enter phone number" :
+               "Enter email address") :
+            "Click mic and speak"
+          }
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleSend()}
+          disabled={isListening && interactionMode === "voice"}
+        />
+        <div className="input-buttons">
+          <button
+            onClick={toggleMic}
+            className={`mic-btn ${isListening ? "active" : ""}`}
+            title="Voice input"
+          >
+            {isListening ? <FaMicrophoneSlash /> : <FaMicrophone />}
+          </button>
+          <button
+            onClick={handleSend}
+            className="send-btn"
+            disabled={isTyping}
+            title="Send message"
+          >
+            {isTyping ? <FaSpinner className="spin" /> : <FaPaperPlane />}
+          </button>
         </div>
       </div>
     </div>
