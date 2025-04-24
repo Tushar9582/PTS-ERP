@@ -1,176 +1,125 @@
-/* Base Styles */
+/* AdminList.css */
+
+/* Base styles */
 .admin-container {
-  margin-left: 250px;
+  margin-left: 250px; /* Adjust this value based on your sidebar width */
   padding: 20px;
-  width: calc(100% - 250px);
-  background-color: #f5f7fa;
-  min-height: 100vh;
-  transition: background-color 0.3s ease;
+  transition: margin-left 0.3s ease;
 }
 
-/* Dark Mode Base */
-.admin-container.dark-mode {
-  background-color: #1a1a2e;
-  color: #e0e0e0;
-}
-
-/* Header Styles */
-.admin-header {
+/* Desktop specific styles */
+.desktop-header-container {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
-  padding: 15px 0;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
 }
 
-.dark-mode .admin-header {
-  border-bottom: 1px solid #3d3d4d;
+.desktop-header-right {
+  display: flex;
+  align-items: center;
+  gap: 15px;
 }
 
-/* Text Styles */
-.dark-mode h2 {
-  color: #e0e0e0;
-}
-
-/* Search Bar Styles */
 .search-bar {
-  width: 300px;
-  transition: all 0.3s ease;
+  width: 250px;
 }
 
-.dark-mode .search-bar {
-  background-color: #2d2d3d;
-  border-color: #3d3d4d;
+.logout-btn {
+  white-space: nowrap;
+}
+
+/* Table styles for desktop */
+.ant-table {
+  font-size: 13px;
+}
+
+.ant-table-thead > tr > th {
+  font-weight: 600;
+  background-color: #fafafa;
+}
+
+.dark-table .ant-table-thead > tr > th {
+  background-color: #1f1f2a;
   color: #e0e0e0;
 }
 
-.dark-mode .search-bar .ant-input-prefix {
-  color: #a0a0a0;
-}
-
-.dark-mode .search-bar input {
-  background-color: transparent;
-  color: #e0e0e0;
-}
-
-.dark-mode .search-bar input::placeholder {
-  color: #a0a0a0;
-}
-
-/* Table Styles */
-.dark-mode .ant-table {
+.dark-table .ant-table-tbody > tr > td {
   background-color: #2a2a3a;
   color: #e0e0e0;
 }
 
-.dark-mode .ant-table-thead > tr > th {
-  background-color: #2a2a3a;
-  color: #e0e0e0;
-  border-bottom: 1px solid #3d3d4d;
-}
-
-.dark-mode .ant-table-tbody > tr > td {
-  border-bottom: 1px solid #3d3d4d;
-  background-color: #2a2a3a;
-  color: #e0e0e0;
-}
-
-.dark-mode .ant-table-tbody > tr:hover > td {
-  background-color: #3d3d4d !important;
-}
-
-/* Checkbox Styles */
-.dark-mode .ant-checkbox-inner {
-  background-color: #2d2d3d;
-  border-color: #4d4d5d;
-}
-
-.dark-mode .ant-checkbox-checked .ant-checkbox-inner {
-  background-color: #1890ff;
-  border-color: #1890ff;
-}
-
-/* Button Styles */
-.dark-mode .ant-btn {
-  color: #e0e0e0;
-  background-color: #2d2d3d;
-  border-color: #3d3d4d;
-}
-
-.dark-mode .ant-btn-primary {
-  background-color: #1890ff;
-  border-color: #1890ff;
-}
-
-.dark-mode .ant-btn-danger {
-  background-color: #ff4d4f;
-  border-color: #ff4d4f;
-}
-
-.dark-mode .ant-btn-circle {
-  background-color: #3d3d4d;
-  border-color: #3d3d4d;
-}
-
-.dark-mode .ant-btn:hover {
-  opacity: 0.8;
-}
-
-/* Responsive Styles */
+/* Mobile responsive styles */
 @media (max-width: 768px) {
   .admin-container {
     margin-left: 0;
-    width: 100%;
+    padding: 10px;
   }
   
-  .admin-header {
+  .mobile-header {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 15px;
+    gap: 10px;
   }
   
-  .search-bar {
+  .mobile-search {
     width: 100%;
-  }
-}
-
-@media (max-width: 576px) {
-  .admin-container {
-    padding: 15px 10px;
   }
   
-  .search-bar {
+  .mobile-logout-btn {
     width: 100%;
+    margin-left: 0 !important;
+  }
+  
+  .mobile-table .ant-table-content {
+    overflow-x: auto;
+  }
+  
+  .mobile-admin-card {
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    background-color: #f9f9f9;
+  }
+  
+  .dark-mobile-card {
+    background-color: #2a2a3a;
+    color: #e0e0e0;
+  }
+  
+  .mobile-admin-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  
+  .mobile-label {
+    font-weight: bold;
+    margin-right: 10px;
+  }
+  
+  .mobile-admin-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 10px;
+  }
+  
+  .ant-table-cell {
+    padding: 8px !important;
+  }
+  
+  h2 {
+    font-size: 1.5rem;
+    text-align: center;
   }
 }
 
-/* Pagination Styles for Dark Mode */
-.dark-mode .ant-pagination-item {
-  background-color: #2d2d3d;
-  border-color: #3d3d4d;
-}
-
-.dark-mode .ant-pagination-item a {
+/* Additional dark mode styles */
+.dark-mobile-card .mobile-label {
   color: #e0e0e0;
 }
 
-.dark-mode .ant-pagination-item-active {
-  background-color: #1890ff;
-  border-color: #1890ff;
-}
-
-.dark-mode .ant-pagination-item-active a {
-  color: white;
-}
-
-.dark-mode .ant-pagination-prev .ant-pagination-item-link,
-.dark-mode .ant-pagination-next .ant-pagination-item-link {
-  background-color: #2d2d3d;
-  border-color: #3d3d4d;
+.dark-mode {
+  background-color: #1a1a2a;
   color: #e0e0e0;
-}
-
-/* Table Row Selection */
-.dark-mode .ant-table-row-selected td {
-  background-color: #3d3d4d !important;
 }
