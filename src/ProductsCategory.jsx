@@ -4,7 +4,6 @@ import { ref, push, onValue } from "firebase/database";
 import { db } from './firebase';
 import './ProductsCategory.css';
 
-
 const ProductsCategory = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [categories, setCategories] = useState([]);
@@ -13,6 +12,7 @@ const ProductsCategory = () => {
     description: '',
     category: ''
   });
+  const [searchQuery, setSearchQuery] = useState('');
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   useEffect(() => {
@@ -58,47 +58,69 @@ const ProductsCategory = () => {
       });
   };
 
+  const filteredCategories = categories.filter(category =>
+    Object.values(category).some(value => 
+      value && value.toString().toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  );
+
   return (
-    <div className={`d-flex vh-100 bg-light ${isMobile ? '' : 'ps-3'}`} style={isMobile ? {} : { marginLeft: '200px' }}>
-      <main className={`flex-grow-1 p-3 ${isMobile ? '' : 'ps-4'}`} style={isMobile ? {} : { marginLeft: "70px" }}>
-        <div className="bg-white p-3 p-md-4 shadow rounded">
-          <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mb-3 gap-2">
-            <h2 className="fs-3 fw-bold mb-0">Product Categories</h2>
-            <div className="d-flex flex-column flex-md-row gap-2 w-100 w-md-auto">
+    <div className="container-fluid bg-light py-2 px-1 px-md-3">
+      <main className="main-content">
+        <div className="bg-white p-4 shadow rounded">
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <h2 className="fs-3 fw-bold">Product Categories</h2>
+            <div className="d-flex flex-column flex-md-row gap-2 w-100">
               <input
                 type="text"
                 className="form-control"
                 placeholder="Search..."
-                style={isMobile ? { width: '100%' } : { width: '200px' }}
+                style={{ maxWidth: "250px" }}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
-              <div className="d-flex flex-column flex-md-row gap-2 w-100">
-                <button className="btn btn-outline-secondary flex-grow-1 flex-md-grow-0">Refresh</button>
-                <button
-                  className="btn btn-primary flex-grow-1 flex-md-grow-0"
-                  onClick={() => setIsFormOpen(true)}
-                >
-                  Add New Category
-                </button>
-              </div>
+              <button 
+                className="btn btn-outline-secondary" 
+                onClick={() => window.location.reload()}
+              >
+                Refresh
+              </button>
+              <button 
+                className="btn btn-primary" 
+                onClick={() => setIsFormOpen(true)}
+              >
+                Add New Category
+              </button>
             </div>
           </div>
 
           <div className="table-responsive">
-            <table className="table table-bordered">
+            <table className="table table-bordered" style={{ tableLayout: 'fixed', width: '100%' }}>
+              <colgroup>
+                <col style={{ width: '25%' }} />
+                <col style={{ width: '50%' }} />
+                <col style={{ width: '25%' }} />
+              </colgroup>
               <thead className="table-light">
                 <tr>
-                  {["Name", "Description", "Product Category"].map((heading) => (
+                  {["Name", "Description", "Category"].map((heading) => (
                     <th key={heading} className="text-center">{heading}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {categories.length > 0 ? (
-                  categories.map((category) => (
+                {filteredCategories.length > 0 ? (
+                  filteredCategories.map((category) => (
                     <tr key={category.id}>
-                      <td className="text-center">{category.name}</td>
-                      <td className="text-center">{category.description}</td>
-                      <td className="text-center">{category.category}</td>
+                      <td className="text-center text-nowrap" style={{ overflow: 'visible' }}>
+                        {category.name || 'N/A'}
+                      </td>
+                      <td className="text-wrap" style={{ minWidth: '200px' }}>
+                        {category.description || 'N/A'}
+                      </td>
+                      <td className="text-center text-nowrap">
+                        {category.category || 'N/A'}
+                      </td>
                     </tr>
                   ))
                 ) : (
@@ -112,36 +134,38 @@ const ProductsCategory = () => {
         </div>
       </main>
 
-      {/* 🖥️ Sidebar on Desktop */}
-      {!isMobile ? (
+      {/* Form Panel */}
+      {isFormOpen && (
         <div
-          className={"position-fixed top-0 end-0 vh-100 bg-white shadow p-4 " + (isFormOpen ? "translate-0" : "translate-100")}
+          className="position-fixed top-0 end-0 vh-100 bg-white shadow p-4"
           style={{
-            width: "350px",
-            marginRight: "20px",
-            transform: isFormOpen ? "translateX(0)" : "translateX(100%)",
+            width: isMobile ? "100%" : "350px",
+            zIndex: 1050,
             transition: "transform 0.3s ease-in-out",
+            transform: isFormOpen ? "translateX(0)" : "translateX(100%)"
           }}
         >
-          <button className="btn-close position-absolute top-2 end-2" onClick={() => setIsFormOpen(false)}></button>
-          <h2 className="fs-3 fw-bold mb-3">Add New Category</h2>
+          <button 
+            className="btn-close position-absolute top-0 end-0 m-3" 
+            onClick={() => setIsFormOpen(false)}
+          ></button>
+          <h2 className="fs-3 fw-bold mb-3 mt-4">Add New Category</h2>
           <form className="row g-3" onSubmit={handleSubmit}>
             {[
               { label: "Name", name: "name", type: "text" },
               { label: "Description", name: "description", type: "text" },
-              { label: "Product Category", name: "category", type: "text" }
+              { label: "Category", name: "category", type: "text" }
             ].map(({ label, name, type }) => (
               <div className="col-12" key={name}>
                 <label className="form-label">{label}</label>
                 <input
                   type={type}
-                  className="form-control"
-                  placeholder={`Enter ${label.toLowerCase()}`}
                   name={name}
+                  placeholder={`Enter ${label.toLowerCase()}`}
+                  className="form-control"
                   value={newCategory[name]}
                   onChange={handleInputChange}
                   required
-                  style={{ border: '1px solid black' }}
                 />
               </div>
             ))}
@@ -151,46 +175,6 @@ const ProductsCategory = () => {
               </button>
             </div>
           </form>
-        </div>
-      ) : (
-        // 📱 Modal on Mobile
-        <div className={`modal ${isFormOpen ? 'd-block' : 'd-none'}`} style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Add New Category</h5>
-                <button type="button" className="btn-close" onClick={() => setIsFormOpen(false)}></button>
-              </div>
-              <div className="modal-body">
-                <form className="row g-3" onSubmit={handleSubmit}>
-                  {[
-                    { label: "Name", name: "name", type: "text" },
-                    { label: "Description", name: "description", type: "text" },
-                    { label: "Product Category", name: "category", type: "text" }
-                  ].map(({ label, name, type }) => (
-                    <div className="col-12" key={name}>
-                      <label className="form-label">{label}</label>
-                      <input
-                        type={type}
-                        className="form-control"
-                        placeholder={`Enter ${label.toLowerCase()}`}
-                        name={name}
-                        value={newCategory[name]}
-                        onChange={handleInputChange}
-                        required
-                        style={{ border: '1px solid black' }}
-                      />
-                    </div>
-                  ))}
-                  <div className="col-12">
-                    <button type="submit" className="btn btn-primary w-100 mt-2">
-                      Submit
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
         </div>
       )}
     </div>

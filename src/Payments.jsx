@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { ref, push, onValue } from "firebase/database";
-import { db } from './firebase'; // Adjust the import path as necessary
-// import './People.css'; // Reuse same CSS as Customer
+import { db } from './firebase';
 
 const Payments = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -15,6 +14,7 @@ const Payments = () => {
     year: '',
     paymentMode: ''
   });
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const paymentsRef = ref(db, 'payments');
@@ -51,6 +51,11 @@ const Payments = () => {
       });
   };
 
+  const filteredPayments = payments.filter(payment =>
+    (payment.number && payment.number.includes(searchQuery)) ||
+    (payment.client && payment.client.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
   return (
     <div className="container-fluid bg-light py-2 px-1 px-md-3">
       <main className="main-content">
@@ -61,10 +66,12 @@ const Payments = () => {
               <input
                 type="text"
                 className="form-control"
-                placeholder="Search..."
+                placeholder="Search by number or client..."
                 style={{ maxWidth: "250px" }}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
-              <button className="btn btn-outline-secondary">Refresh</button>
+              <button className="btn btn-outline-secondary" onClick={() => window.location.reload()}>Refresh</button>
               <button className="btn btn-primary" onClick={() => setIsFormOpen(true)}>
                 Add New Payment
               </button>
@@ -72,7 +79,15 @@ const Payments = () => {
           </div>
 
           <div className="table-responsive">
-            <table className="table table-bordered">
+            <table className="table table-bordered" style={{ tableLayout: 'fixed' }}>
+              <colgroup>
+                <col style={{ width: '15%' }} />
+                <col style={{ width: '25%' }} />
+                <col style={{ width: '10%' }} />
+                <col style={{ width: '10%' }} />
+                <col style={{ width: '10%' }} />
+                <col style={{ width: '15%' }} />
+              </colgroup>
               <thead className="table-light">
                 <tr>
                   {["Number", "Client", "Amount", "Date", "Year", "Payment Mode"].map((heading) => (
@@ -81,11 +96,13 @@ const Payments = () => {
                 </tr>
               </thead>
               <tbody>
-                {payments.length > 0 ? (
-                  payments.map((payment) => (
+                {filteredPayments.length > 0 ? (
+                  filteredPayments.map((payment) => (
                     <tr key={payment.id}>
-                      <td className="text-center">{payment.number}</td>
-                      <td className="text-center">{payment.client}</td>
+                      <td className="text-center font-monospace text-nowrap" style={{ overflow: 'visible' }}>
+                        {payment.number}
+                      </td>
+                      <td className="text-center text-nowrap">{payment.client}</td>
                       <td className="text-center">{payment.amount}</td>
                       <td className="text-center">{payment.date}</td>
                       <td className="text-center">{payment.year}</td>
@@ -103,7 +120,6 @@ const Payments = () => {
         </div>
       </main>
 
-      {/* CRM-style Slide-In Panel */}
       {isFormOpen && (
         <div
           className="position-fixed top-0 end-0 vh-100 bg-white shadow p-4"
@@ -118,8 +134,20 @@ const Payments = () => {
           <h2 className="fs-3 fw-bold mb-3 mt-4">Add New Payment</h2>
 
           <form className="row g-3" onSubmit={handleSubmit}>
+            <div className="col-12">
+              <label className="form-label">Number</label>
+              <input
+                type="text"
+                name="number"
+                placeholder="Enter complete number (e.g. +923001234567)"
+                className="form-control font-monospace"
+                value={newPayment.number}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+
             {[
-              { label: "Number", name: "number", type: "text" },
               { label: "Client", name: "client", type: "text" },
               { label: "Amount", name: "amount", type: "number" },
               { label: "Date", name: "date", type: "date" },
@@ -135,12 +163,6 @@ const Payments = () => {
                   value={newPayment[name]}
                   onChange={handleInputChange}
                   required
-                  style={{
-                    border: '1px solid #ccc',
-                    borderRadius: '8px',
-                    padding: '10px',
-                    fontSize: '14px'
-                  }}
                 />
               </div>
             ))}

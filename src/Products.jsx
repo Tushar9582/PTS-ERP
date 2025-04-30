@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { ref, push, onValue } from 'firebase/database';
-import { db } from './firebase'; // Adjust the path to your firebase.js
-import './People.css'; // Reuse same styling from customer
+import { db } from './firebase';
+import './People.css';
 
 const Products = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -15,6 +15,7 @@ const Products = () => {
     description: '',
     ref: ''
   });
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const productsRef = ref(db, 'products');
@@ -51,6 +52,12 @@ const Products = () => {
       });
   };
 
+  const filteredProducts = products.filter(product =>
+    Object.values(product).some(value => 
+      value && value.toString().toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  );
+
   return (
     <div className="container-fluid bg-light py-2 px-1 px-md-3">
       <main className="main-content">
@@ -63,8 +70,10 @@ const Products = () => {
                 className="form-control"
                 placeholder="Search..."
                 style={{ maxWidth: "250px" }}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
-              <button className="btn btn-outline-secondary">Refresh</button>
+              <button className="btn btn-outline-secondary" onClick={() => window.location.reload()}>Refresh</button>
               <button className="btn btn-primary" onClick={() => setIsFormOpen(true)}>
                 Add New Product
               </button>
@@ -72,7 +81,15 @@ const Products = () => {
           </div>
 
           <div className="table-responsive">
-            <table className="table table-bordered">
+            <table className="table table-bordered" style={{ tableLayout: 'fixed' }}>
+              <colgroup>
+                <col style={{ width: '20%' }} /> {/* Name */}
+                <col style={{ width: '15%' }} /> {/* Category */}
+                <col style={{ width: '10%' }} /> {/* Price */}
+                <col style={{ width: '10%' }} /> {/* Currency */}
+                <col style={{ width: '15%' }} /> {/* Ref */}
+                <col style={{ width: '30%' }} /> {/* Description */}
+              </colgroup>
               <thead className="table-light">
                 <tr>
                   {["Name", "Category", "Price", "Currency", "Ref", "Description"].map((heading) => (
@@ -81,15 +98,19 @@ const Products = () => {
                 </tr>
               </thead>
               <tbody>
-                {products.length > 0 ? (
-                  products.map((product) => (
+                {filteredProducts.length > 0 ? (
+                  filteredProducts.map((product) => (
                     <tr key={product.id}>
-                      <td className="text-center">{product.name}</td>
-                      <td className="text-center">{product.category}</td>
-                      <td className="text-center">{product.price}</td>
-                      <td className="text-center">{product.currency}</td>
-                      <td className="text-center">{product.ref}</td>
-                      <td className="text-center">{product.description}</td>
+                      <td className="text-center text-nowrap">{product.name || 'N/A'}</td>
+                      <td className="text-center text-nowrap">{product.category || 'N/A'}</td>
+                      <td className="text-center font-monospace">{product.price || 'N/A'}</td>
+                      <td className="text-center">{product.currency || 'N/A'}</td>
+                      <td className="text-center font-monospace text-nowrap" style={{ overflow: 'visible' }}>
+                        {product.ref || 'N/A'}
+                      </td>
+                      <td className="text-wrap" style={{ minWidth: '200px' }}>
+                        {product.description || 'N/A'}
+                      </td>
                     </tr>
                   ))
                 ) : (
@@ -103,7 +124,6 @@ const Products = () => {
         </div>
       </main>
 
-      {/* CRM-style Slide-In Panel */}
       {isFormOpen && (
         <div
           className="position-fixed top-0 end-0 vh-100 bg-white shadow p-4"
@@ -134,12 +154,6 @@ const Products = () => {
                   value={newProduct[name]}
                   onChange={handleInputChange}
                   required
-                  style={{
-                    border: '1px solid #ccc',
-                    borderRadius: '8px',
-                    padding: '10px',
-                    fontSize: '14px'
-                  }}
                 />
               </div>
             ))}

@@ -64,7 +64,14 @@ const Customers = ({ onSelectCustomer }) => {
           </div>
 
           <div className="table-responsive">
-            <table className="table table-bordered">
+            <table className="table table-bordered" style={{ tableLayout: 'fixed' }}>
+              <colgroup>
+                <col style={{ width: '20%' }} /> {/* Name */}
+                <col style={{ width: '20%' }} /> {/* Email */}
+                <col style={{ width: '15%' }} /> {/* Phone */}
+                <col style={{ width: '25%' }} /> {/* Address */}
+                <col style={{ width: '20%' }} /> {/* Company */}
+              </colgroup>
               <thead className="table-light">
                 <tr>
                   {["Name", "Email", "Phone", "Address", "Company"].map((heading) => (
@@ -82,9 +89,11 @@ const Customers = ({ onSelectCustomer }) => {
                       onClick={() => onSelectCustomer(customer)}
                       style={{ cursor: "pointer" }}
                     >
-                      <td className="text-center">{customer.name || "No Name"}</td>
-                      <td className="text-center">{customer.email || "N/A"}</td>
-                      <td className="text-center">{customer.phone || "N/A"}</td>
+                      <td className="text-center text-nowrap">{customer.name || "No Name"}</td>
+                      <td className="text-center text-nowrap">{customer.email || "N/A"}</td>
+                      <td className="text-center font-monospace text-nowrap" style={{ overflow: 'visible' }}>
+                        {customer.phone || "N/A"}
+                      </td>
                       <td className="text-center">{customer.address || "N/A"}</td>
                       <td className="text-center">{customer.company || "N/A"}</td>
                     </tr>
@@ -135,7 +144,7 @@ const Customers = ({ onSelectCustomer }) => {
                   className="form-control"
                   value={formData[name]}
                   onChange={handleChange}
-                  required
+                  required={name === "name"}
                 />
               </div>
             ))}
