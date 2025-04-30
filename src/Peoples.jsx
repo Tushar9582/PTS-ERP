@@ -159,25 +159,27 @@ const Peoples = () => {
             <table className="table table-bordered">
               <thead className="table-light">
                 <tr>
-                  {"Name,Company,Country,Phone,Email,Actions".split(",").map((heading) => (
-                    <th key={heading} className="text-center">{heading}</th>
-                  ))}
+                  <th className="text-center" colSpan="6">People</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredPeople.length > 0 ? (
                   filteredPeople.map((person) => (
-                    <tr key={person.id}>
-                      <td className="text-center">{person.name}</td>
-                      <td className="text-center">{person.company}</td>
-                      <td className="text-center">{person.country}</td>
-                      <td className="text-center">{person.phone}</td>
-                      <td className="text-center">{person.email}</td>
-                      <td className="text-center">
-                        <button className="btn btn-sm btn-warning me-2" onClick={() => handleEdit(person)}>Edit</button>
-                        <button className="btn btn-sm btn-danger" onClick={() => handleDelete(person.id)}>Delete</button>
-                      </td>
-                    </tr>
+                    <React.Fragment key={person.id}>
+                      <tr className="table-primary">
+                        <td colSpan="6" className="fw-bold text-start">👤 {person.name}</td>
+                      </tr>
+                      <tr>
+                        <td className="text-start"><strong>Company:</strong> {person.company}</td>
+                        <td className="text-start"><strong>Country:</strong> {person.country}</td>
+                        <td className="text-start"><strong>Phone:</strong> {person.phone}</td>
+                        <td className="text-start"><strong>Email:</strong> {person.email}</td>
+                        <td className="text-center" colSpan="2">
+                          <button className="btn btn-sm btn-warning me-2" onClick={() => handleEdit(person)}>Edit</button>
+                          <button className="btn btn-sm btn-danger" onClick={() => handleDelete(person.id)}>Delete</button>
+                        </td>
+                      </tr>
+                    </React.Fragment>
                   ))
                 ) : (
                   <tr><td className="text-center" colSpan="6">No data available</td></tr>

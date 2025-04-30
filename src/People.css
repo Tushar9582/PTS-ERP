@@ -50,3 +50,37 @@
     padding: 20px;
   }
 }
+.name-tooltip {
+  position: relative;
+  cursor: pointer;
+  display: inline-block;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+.name-tooltip::after {
+  content: attr(data-fullname);
+  visibility: hidden;
+  opacity: 0;
+  position: absolute;
+  left: 0;
+  top: 100%;
+  background-color: rgba(0, 0, 0, 0.85);
+  color: #fff;
+  padding: 6px 10px;
+  white-space: nowrap;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  z-index: 999;
+  margin-top: 5px;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+.name-tooltip:hover::after {
+  visibility: visible;
+  opacity: 1;
+}

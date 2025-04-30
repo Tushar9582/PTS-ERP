@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { ref, push, onValue } from "firebase/database";
 import { db } from './firebase'; // Adjust the import path as necessary
-import './People.css'; // Reuse same CSS as Customer
+// import './People.css'; // Reuse same CSS as Customer
 
 const Payments = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
