@@ -1,12 +1,17 @@
-import { useState, useEffect } from "react";
-import "bootstrap/dist/css/bootstrap.min.css";
+import React, { useState, useEffect } from "react";
+import { Table, Button, Modal, Input, Grid } from "antd";
+import { SearchOutlined } from "@ant-design/icons";
 import { db } from "./firebase";
 import { ref, push, onValue } from "firebase/database";
-import Swal from "sweetalert2";
+
+const { useBreakpoint } = Grid;
 
 const Customers = ({ onSelectCustomer }) => {
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  const screens = useBreakpoint();
   const [customers, setCustomers] = useState([]);
+  const [filteredCustomers, setFilteredCustomers] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -15,147 +20,173 @@ const Customers = ({ onSelectCustomer }) => {
     company: "",
   });
 
+  // Fetch from Firebase
   useEffect(() => {
     const customersRef = ref(db, "customers");
     onValue(customersRef, (snapshot) => {
       const data = snapshot.val();
-      if (data) {
-        const customersList = Object.keys(data).map((key) => ({
-          id: key,
-          ...data[key],
-        }));
-        setCustomers(customersList);
-      } else {
-        setCustomers([]);
-      }
+      const list = data
+        ? Object.keys(data).map((key) => ({ id: key, ...data[key] }))
+        : [];
+      setCustomers(list);
+      setFilteredCustomers(list);
     });
   }, []);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  // Search filter
+  useEffect(() => {
+    const filtered = customers.filter((cust) =>
+      cust.name?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredCustomers(filtered);
+  }, [searchTerm, customers]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!formData.name.trim()) {
-      Swal.fire("Error!", "Customer name is required!", "error");
-      return;
-    }
+  const handleChange = (e) =>
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+
+  const handleSubmit = async () => {
+    if (!formData.name.trim()) return;
     try {
       await push(ref(db, "customers"), formData);
-      Swal.fire("Success!", "Customer added successfully!", "success");
-      setFormData({ name: "", email: "", phone: "", address: "", company: "" });
-      setIsFormOpen(false);
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        address: "",
+        company: "",
+      });
+      setIsModalOpen(false);
     } catch (error) {
-      Swal.fire("Error!", "Failed to add customer.", "error");
       console.error("Error adding customer:", error);
     }
   };
 
+ // Responsive Columns
+const getColumns = () => {
+  if (screens.xs) {
+    return [
+      {
+        title: "Client Details",
+        dataIndex: "name",
+        key: "name",
+        render: (_, record) => (
+          <div onClick={() => onSelectCustomer(record)}>
+            <strong>{record.name}</strong><br />
+            📞 {record.phone}<br />
+            ✉️ {record.email}<br />
+            🏢 {record.company}<br />
+            📍 {record.address}
+          </div>
+        ),
+      },
+    ];
+  }
+
+  return [
+    { title: "Name", dataIndex: "name", key: "name" },
+    { title: "Email", dataIndex: "email", key: "email" },
+    { title: "Phone", dataIndex: "phone", key: "phone" },
+    { title: "Address", dataIndex: "address", key: "address" },
+    { title: "Company", dataIndex: "company", key: "company" },
+  ];
+};
+
+
   return (
-    <div className="container-fluid bg-light py-2 px-1 px-md-3">
-      <main className="main-content">
-        <div className="bg-white p-4 shadow rounded">
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <h2 className="fs-3 fw-bold">Clients List</h2>
-            <button className="btn btn-primary" onClick={() => setIsFormOpen(true)}>
-              Add Clients
-            </button>
-          </div>
-
-          <div className="table-responsive">
-            <table className="table table-bordered" style={{ tableLayout: 'fixed' }}>
-              <colgroup>
-                <col style={{ width: '20%' }} /> {/* Name */}
-                <col style={{ width: '20%' }} /> {/* Email */}
-                <col style={{ width: '15%' }} /> {/* Phone */}
-                <col style={{ width: '25%' }} /> {/* Address */}
-                <col style={{ width: '20%' }} /> {/* Company */}
-              </colgroup>
-              <thead className="table-light">
-                <tr>
-                  {["Name", "Email", "Phone", "Address", "Company"].map((heading) => (
-                    <th key={heading} className="text-center">
-                      {heading}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {customers.length > 0 ? (
-                  customers.map((customer) => (
-                    <tr
-                      key={customer.id}
-                      onClick={() => onSelectCustomer(customer)}
-                      style={{ cursor: "pointer" }}
-                    >
-                      <td className="text-center text-nowrap">{customer.name || "No Name"}</td>
-                      <td className="text-center text-nowrap">{customer.email || "N/A"}</td>
-                      <td className="text-center font-monospace text-nowrap" style={{ overflow: 'visible' }}>
-                        {customer.phone || "N/A"}
-                      </td>
-                      <td className="text-center">{customer.address || "N/A"}</td>
-                      <td className="text-center">{customer.company || "N/A"}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td className="text-center" colSpan="5">
-                      No data available
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </main>
-
-      {/* Overlapping form panel */}
-      {isFormOpen && (
+    <div
+      style={{
+        padding: screens.xs ? "12px" : "24px",
+        marginLeft: screens.xs ? "0" : "250px",
+        maxWidth: "1100px",
+        width: "100%",
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: screens.xs ? "column" : "row",
+          justifyContent: "space-between",
+          marginBottom: "16px",
+          gap: screens.xs ? "12px" : "8px",
+        }}
+      >
+        <h2 style={{ margin: screens.xs ? "0 0 8px 0" : "0" }}>Clients List</h2>
         <div
-          className="position-fixed top-0 end-0 vh-100 bg-white shadow p-4"
           style={{
-            width: "350px",
-            zIndex: 1050,
-            transition: "transform 0.3s ease-in-out",
-            transform: isFormOpen ? "translateX(0)" : "translateX(100%)",
+            display: "flex",
+            gap: "8px",
+            flexDirection: screens.xs ? "column" : "row",
           }}
         >
-          <button
-            className="btn-close position-absolute top-0 end-0 m-3"
-            onClick={() => setIsFormOpen(false)}
-          ></button>
-          <h2 className="fs-3 fw-bold mb-3 mt-4">Add New Clients</h2>
-
-          <form className="row g-3" onSubmit={handleSubmit}>
-            {[
-              { label: "Name", name: "name" },
-              { label: "Email", name: "email", type: "email" },
-              { label: "Phone", name: "phone" },
-              { label: "Address", name: "address" },
-              { label: "Company", name: "company" },
-            ].map(({ label, name, type = "text" }) => (
-              <div className="col-12" key={name}>
-                <label className="form-label">{label}</label>
-                <input
-                  type={type}
-                  name={name}
-                  className="form-control"
-                  value={formData[name]}
-                  onChange={handleChange}
-                  required={name === "name"}
-                />
-              </div>
-            ))}
-            <div className="col-12">
-              <button type="submit" className="btn btn-primary w-100">
-                Submit
-              </button>
-            </div>
-          </form>
+          <Input
+            placeholder="Search by Name"
+            allowClear
+            prefix={<SearchOutlined />}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ width: screens.xs ? "100%" : "200px" }}
+          />
+          <Button
+            type="primary"
+            onClick={() => setIsModalOpen(true)}
+            style={{ width: screens.xs ? "100%" : "auto" }}
+          >
+            + Add Client
+          </Button>
         </div>
-      )}
+      </div>
+
+      {/* Table */}
+      <Table
+        columns={getColumns()}
+        dataSource={filteredCustomers}
+        rowKey="id"
+        size={screens.xs ? "small" : "middle"}
+        scroll={screens.xs ? { x: true } : undefined}
+        style={{
+          background: "white",
+          borderRadius: "8px",
+          padding: screens.xs ? "8px" : "12px",
+        }}
+        locale={{ emptyText: "No clients found" }}
+        onRow={(record) => ({
+          onClick: () => onSelectCustomer?.(record),
+          style: { cursor: "pointer" },
+        })}
+      />
+
+      {/* Modal */}
+      <Modal
+        title="Add New Client"
+        open={isModalOpen}
+        onCancel={() => setIsModalOpen(false)}
+        onOk={handleSubmit}
+        okText="Submit"
+        cancelText="Cancel"
+        width={screens.xs ? "90%" : 700}
+        style={{ top: screens.xs ? "16px" : "50px" }}
+      >
+        <div className="row g-3">
+          {[
+            { label: "Name", name: "name" },
+            { label: "Email", name: "email", type: "email" },
+            { label: "Phone", name: "phone" },
+            { label: "Address", name: "address" },
+            { label: "Company", name: "company" },
+          ].map(({ label, name, type = "text" }) => (
+            <div className="col-12" key={name}>
+              <label className="form-label">{label}</label>
+              <Input
+                type={type}
+                name={name}
+                value={formData[name]}
+                onChange={handleChange}
+              />
+            </div>
+          ))}
+        </div>
+      </Modal>
     </div>
   );
 };

@@ -1,196 +1,217 @@
-import React, { useState, useEffect } from 'react';
-import 'bootstrap/dist/css/bootstrap.min.css';
+import React, { useState, useEffect } from "react";
+import { Table, Button, Modal, Input, Grid, Select } from "antd";
+import { SearchOutlined } from "@ant-design/icons";
 import { ref, push, onValue } from "firebase/database";
-import { db } from './firebase';
+import { db } from "./firebase";
 
-const Payments = () => {
-  const [isFormOpen, setIsFormOpen] = useState(false);
+const { useBreakpoint } = Grid;
+
+const Payments = ({ onSelectPayment }) => {
+  const screens = useBreakpoint();
   const [payments, setPayments] = useState([]);
-  const [newPayment, setNewPayment] = useState({
-    number: '',
-    client: '',
-    amount: '',
-    date: '',
-    year: '',
-    paymentMode: ''
+  const [filteredPayments, setFilteredPayments] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    number: "",
+    client: "",
+    amount: "",
+    date: "",
+    year: "",
+    paymentMode: "",
   });
-  const [searchQuery, setSearchQuery] = useState('');
 
+  // Fetch from Firebase
   useEffect(() => {
-    const paymentsRef = ref(db, 'payments');
+    const paymentsRef = ref(db, "payments");
     onValue(paymentsRef, (snapshot) => {
       const data = snapshot.val();
-      if (data) {
-        const paymentsList = Object.keys(data).map((key) => ({
-          id: key,
-          ...data[key],
-        }));
-        setPayments(paymentsList);
-      } else {
-        setPayments([]);
-      }
+      const list = data
+        ? Object.keys(data).map((key) => ({ id: key, ...data[key] }))
+        : [];
+      setPayments(list);
+      setFilteredPayments(list);
     });
   }, []);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewPayment({ ...newPayment, [name]: value });
-  };
+  // Search filter
+  useEffect(() => {
+    const filtered = payments.filter(
+      (payment) =>
+        payment.number?.includes(searchTerm) ||
+        payment.client?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredPayments(filtered);
+  }, [searchTerm, payments]);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const paymentsRef = ref(db, 'payments');
-    push(paymentsRef, newPayment)
-      .then(() => {
-        console.log("Payment saved to Firebase!");
-        setNewPayment({ number: '', client: '', amount: '', date: '', year: '', paymentMode: '' });
-        setIsFormOpen(false);
-      })
-      .catch((error) => {
-        console.error("Error saving payment: ", error);
+  const handleChange = (e) =>
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+
+  const handleSubmit = async () => {
+    if (!formData.number.trim()) return;
+    try {
+      await push(ref(db, "payments"), formData);
+      setFormData({
+        number: "",
+        client: "",
+        amount: "",
+        date: "",
+        year: "",
+        paymentMode: "",
       });
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error("Error adding payment:", error);
+    }
   };
 
-  const filteredPayments = payments.filter(payment =>
-    (payment.number && payment.number.includes(searchQuery)) ||
-    (payment.client && payment.client.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  // Responsive Columns
+  const getColumns = () => {
+    if (screens.xs) {
+      return [
+        {
+          title: "Payment Details",
+          dataIndex: "number",
+          key: "number",
+          render: (_, record) => (
+            <div onClick={() => onSelectPayment?.(record)}>
+              <strong>#{record.number}</strong><br />
+              💼 {record.client}<br />
+              💰 {record.amount}<br />
+              📅 {record.date} ({record.year})<br />
+              💳 {record.paymentMode}
+            </div>
+          ),
+        },
+      ];
+    }
+
+    return [
+      { title: "Number", dataIndex: "number", key: "number" },
+      { title: "Client", dataIndex: "client", key: "client" },
+      { 
+        title: "Amount", 
+        dataIndex: "amount", 
+        key: "amount",
+        render: (amount) => `$${amount}`
+      },
+      { title: "Date", dataIndex: "date", key: "date" },
+      { title: "Year", dataIndex: "year", key: "year" },
+      { title: "Payment Mode", dataIndex: "paymentMode", key: "paymentMode" },
+    ];
+  };
 
   return (
-    <div className="container-fluid bg-light py-2 px-1 px-md-3">
-      <main className="main-content">
-        <div className="bg-white p-4 shadow rounded">
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <h2 className="fs-3 fw-bold">Payments List</h2>
-            <div className="d-flex flex-column flex-md-row gap-2 w-100">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Search by number or client..."
-                style={{ maxWidth: "250px" }}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              <button className="btn btn-outline-secondary" onClick={() => window.location.reload()}>Refresh</button>
-              <button className="btn btn-primary" onClick={() => setIsFormOpen(true)}>
-                Add New Payment
-              </button>
-            </div>
-          </div>
-
-          <div className="table-responsive">
-            <table className="table table-bordered" style={{ tableLayout: 'fixed' }}>
-              <colgroup>
-                <col style={{ width: '15%' }} />
-                <col style={{ width: '25%' }} />
-                <col style={{ width: '10%' }} />
-                <col style={{ width: '10%' }} />
-                <col style={{ width: '10%' }} />
-                <col style={{ width: '15%' }} />
-              </colgroup>
-              <thead className="table-light">
-                <tr>
-                  {["Number", "Client", "Amount", "Date", "Year", "Payment Mode"].map((heading) => (
-                    <th key={heading} className="text-center">{heading}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filteredPayments.length > 0 ? (
-                  filteredPayments.map((payment) => (
-                    <tr key={payment.id}>
-                      <td className="text-center font-monospace text-nowrap" style={{ overflow: 'visible' }}>
-                        {payment.number}
-                      </td>
-                      <td className="text-center text-nowrap">{payment.client}</td>
-                      <td className="text-center">{payment.amount}</td>
-                      <td className="text-center">{payment.date}</td>
-                      <td className="text-center">{payment.year}</td>
-                      <td className="text-center">{payment.paymentMode}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td className="text-center" colSpan="6">No data available</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </main>
-
-      {isFormOpen && (
+    <div
+      style={{
+        padding: screens.xs ? "12px" : "24px",
+        marginLeft: screens.xs ? "0" : "250px",
+        maxWidth: "1100px",
+        width: "100%",
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: screens.xs ? "column" : "row",
+          justifyContent: "space-between",
+          marginBottom: "16px",
+          gap: screens.xs ? "12px" : "8px",
+        }}
+      >
+        <h2 style={{ margin: screens.xs ? "0 0 8px 0" : "0" }}>Payments List</h2>
         <div
-          className="position-fixed top-0 end-0 vh-100 bg-white shadow p-4"
           style={{
-            width: "350px",
-            zIndex: 1050,
-            transition: "transform 0.3s ease-in-out",
-            transform: isFormOpen ? "translateX(0)" : "translateX(100%)"
+            display: "flex",
+            gap: "8px",
+            flexDirection: screens.xs ? "column" : "row",
           }}
         >
-          <button className="btn-close position-absolute top-0 end-0 m-3" onClick={() => setIsFormOpen(false)}></button>
-          <h2 className="fs-3 fw-bold mb-3 mt-4">Add New Payment</h2>
+          <Input
+            placeholder="Search by number or client"
+            allowClear
+            prefix={<SearchOutlined />}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ width: screens.xs ? "100%" : "200px" }}
+          />
+          <Button
+            type="primary"
+            onClick={() => setIsModalOpen(true)}
+            style={{ width: screens.xs ? "100%" : "auto" }}
+          >
+            + Add Payment
+          </Button>
+        </div>
+      </div>
 
-          <form className="row g-3" onSubmit={handleSubmit}>
-            <div className="col-12">
-              <label className="form-label">Number</label>
-              <input
-                type="text"
-                name="number"
-                placeholder="Enter complete number (e.g. +923001234567)"
-                className="form-control font-monospace"
-                value={newPayment.number}
-                onChange={handleInputChange}
+      {/* Table */}
+      <Table
+        columns={getColumns()}
+        dataSource={filteredPayments}
+        rowKey="id"
+        size={screens.xs ? "small" : "middle"}
+        scroll={screens.xs ? { x: true } : undefined}
+        style={{
+          background: "white",
+          borderRadius: "8px",
+          padding: screens.xs ? "8px" : "12px",
+        }}
+        locale={{ emptyText: "No payments found" }}
+        onRow={(record) => ({
+          onClick: () => onSelectPayment?.(record),
+          style: { cursor: "pointer" },
+        })}
+      />
+
+      {/* Modal */}
+      <Modal
+        title="Add New Payment"
+        open={isModalOpen}
+        onCancel={() => setIsModalOpen(false)}
+        onOk={handleSubmit}
+        okText="Submit"
+        cancelText="Cancel"
+        width={screens.xs ? "90%" : 700}
+        style={{ top: screens.xs ? "16px" : "50px" }}
+      >
+        <div className="row g-3">
+          {[
+            { label: "Number", name: "number" },
+            { label: "Client", name: "client" },
+            { label: "Amount", name: "amount", type: "number" },
+            { label: "Date", name: "date", type: "date" },
+            { label: "Year", name: "year", type: "number" },
+          ].map(({ label, name, type = "text" }) => (
+            <div className="col-12" key={name}>
+              <label className="form-label">{label}</label>
+              <Input
+                type={type}
+                name={name}
+                value={formData[name]}
+                onChange={handleChange}
                 required
               />
             </div>
-
-            {[
-              { label: "Client", name: "client", type: "text" },
-              { label: "Amount", name: "amount", type: "number" },
-              { label: "Date", name: "date", type: "date" },
-              { label: "Year", name: "year", type: "number" }
-            ].map(({ label, name, type }) => (
-              <div className="col-12" key={name}>
-                <label className="form-label">{label}</label>
-                <input
-                  type={type}
-                  name={name}
-                  placeholder={`Enter ${label.toLowerCase()}`}
-                  className="form-control"
-                  value={newPayment[name]}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-            ))}
-
-            <div className="col-12">
-              <label className="form-label">Payment Mode</label>
-              <select
-                className="form-select"
-                name="paymentMode"
-                value={newPayment.paymentMode}
-                onChange={handleInputChange}
-                required
-              >
-                <option value="">Select Payment Mode</option>
-                <option value="Cash">Cash</option>
-                <option value="Credit Card">Credit Card</option>
-                <option value="Bank Transfer">Bank Transfer</option>
-              </select>
-            </div>
-
-            <div className="col-12">
-              <button type="submit" className="btn btn-primary w-100">
-                Submit
-              </button>
-            </div>
-          </form>
+          ))}
+          
+          <div className="col-12">
+            <label className="form-label">Payment Mode</label>
+            <Select
+              style={{ width: '100%' }}
+              value={formData.paymentMode}
+              onChange={(value) => setFormData({...formData, paymentMode: value})}
+              options={[
+                { value: 'Cash', label: 'Cash' },
+                { value: 'Credit Card', label: 'Credit Card' },
+                { value: 'Bank Transfer', label: 'Bank Transfer' },
+              ]}
+              placeholder="Select payment mode"
+            />
+          </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 };

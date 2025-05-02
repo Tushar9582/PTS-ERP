@@ -1,182 +1,191 @@
-import React, { useState, useEffect } from 'react';
-import 'bootstrap/dist/css/bootstrap.min.css';
+import React, { useState, useEffect } from "react";
+import { Table, Button, Modal, Input, Grid } from "antd";
+import { SearchOutlined } from "@ant-design/icons";
 import { ref, push, onValue } from "firebase/database";
-import { db } from './firebase';
-import './ProductsCategory.css';
+import { db } from "./firebase";
+
+const { useBreakpoint } = Grid;
 
 const ProductsCategory = () => {
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  const screens = useBreakpoint();
   const [categories, setCategories] = useState([]);
-  const [newCategory, setNewCategory] = useState({
-    name: '',
-    description: '',
-    category: ''
+  const [filteredCategories, setFilteredCategories] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    category: ""
   });
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
+  // Fetch from Firebase
   useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  useEffect(() => {
-    const categoriesRef = ref(db, 'categories');
+    const categoriesRef = ref(db, "categories");
     onValue(categoriesRef, (snapshot) => {
       const data = snapshot.val();
-      if (data) {
-        const categoriesList = Object.keys(data).map((key) => ({
-          id: key,
-          ...data[key],
-        }));
-        setCategories(categoriesList);
-      } else {
-        setCategories([]);
-      }
+      const list = data
+        ? Object.keys(data).map((key) => ({ id: key, ...data[key] }))
+        : [];
+      setCategories(list);
+      setFilteredCategories(list);
     });
   }, []);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewCategory({ ...newCategory, [name]: value });
-  };
+  // Search filter
+  useEffect(() => {
+    const filtered = categories.filter(category =>
+      Object.values(category).some(value => 
+        value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    );
+    setFilteredCategories(filtered);
+  }, [searchTerm, categories]);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const categoriesRef = ref(db, 'categories');
-    push(categoriesRef, newCategory)
-      .then(() => {
-        console.log("Category saved to Firebase!");
-        setNewCategory({ name: '', description: '', category: '' });
-        setIsFormOpen(false);
-      })
-      .catch((error) => {
-        console.error("Error saving category: ", error);
+  const handleChange = (e) =>
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+
+  const handleSubmit = async () => {
+    if (!formData.name.trim()) return;
+    try {
+      await push(ref(db, "categories"), formData);
+      setFormData({
+        name: "",
+        description: "",
+        category: ""
       });
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error("Error adding category:", error);
+    }
   };
 
-  const filteredCategories = categories.filter(category =>
-    Object.values(category).some(value => 
-      value && value.toString().toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  );
+  // Responsive Columns
+  const getColumns = () => {
+    if (screens.xs) {
+      return [
+        {
+          title: "Category Details",
+          dataIndex: "name",
+          key: "name",
+          render: (_, record) => (
+            <div>
+              <strong>{record.name}</strong><br />
+              📝 {record.description || 'N/A'}<br />
+              🏷️ {record.category || 'N/A'}
+            </div>
+          ),
+        },
+      ];
+    }
+
+    return [
+      { title: "Name", dataIndex: "name", key: "name" },
+      { 
+        title: "Description", 
+        dataIndex: "description", 
+        key: "description",
+        render: (description) => description || 'N/A'
+      },
+      { 
+        title: "Category", 
+        dataIndex: "category", 
+        key: "category",
+        render: (category) => category || 'N/A'
+      },
+    ];
+  };
 
   return (
-    <div className="container-fluid bg-light py-2 px-1 px-md-3">
-      <main className="main-content">
-        <div className="bg-white p-4 shadow rounded">
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <h2 className="fs-3 fw-bold">Product Categories</h2>
-            <div className="d-flex flex-column flex-md-row gap-2 w-100">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Search..."
-                style={{ maxWidth: "250px" }}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              <button 
-                className="btn btn-outline-secondary" 
-                onClick={() => window.location.reload()}
-              >
-                Refresh
-              </button>
-              <button 
-                className="btn btn-primary" 
-                onClick={() => setIsFormOpen(true)}
-              >
-                Add New Category
-              </button>
-            </div>
-          </div>
-
-          <div className="table-responsive">
-            <table className="table table-bordered" style={{ tableLayout: 'fixed', width: '100%' }}>
-              <colgroup>
-                <col style={{ width: '25%' }} />
-                <col style={{ width: '50%' }} />
-                <col style={{ width: '25%' }} />
-              </colgroup>
-              <thead className="table-light">
-                <tr>
-                  {["Name", "Description", "Category"].map((heading) => (
-                    <th key={heading} className="text-center">{heading}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filteredCategories.length > 0 ? (
-                  filteredCategories.map((category) => (
-                    <tr key={category.id}>
-                      <td className="text-center text-nowrap" style={{ overflow: 'visible' }}>
-                        {category.name || 'N/A'}
-                      </td>
-                      <td className="text-wrap" style={{ minWidth: '200px' }}>
-                        {category.description || 'N/A'}
-                      </td>
-                      <td className="text-center text-nowrap">
-                        {category.category || 'N/A'}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td className="text-center" colSpan="3">No data available</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </main>
-
-      {/* Form Panel */}
-      {isFormOpen && (
+    <div
+      style={{
+        padding: screens.xs ? "12px" : "24px",
+        marginLeft: screens.xs ? "0" : "250px",
+        maxWidth: "1100px",
+        width: "100%",
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: screens.xs ? "column" : "row",
+          justifyContent: "space-between",
+          marginBottom: "16px",
+          gap: screens.xs ? "12px" : "8px",
+        }}
+      >
+        <h2 style={{ margin: screens.xs ? "0 0 8px 0" : "0" }}>Product Categories</h2>
         <div
-          className="position-fixed top-0 end-0 vh-100 bg-white shadow p-4"
           style={{
-            width: isMobile ? "100%" : "350px",
-            zIndex: 1050,
-            transition: "transform 0.3s ease-in-out",
-            transform: isFormOpen ? "translateX(0)" : "translateX(100%)"
+            display: "flex",
+            gap: "8px",
+            flexDirection: screens.xs ? "column" : "row",
           }}
         >
-          <button 
-            className="btn-close position-absolute top-0 end-0 m-3" 
-            onClick={() => setIsFormOpen(false)}
-          ></button>
-          <h2 className="fs-3 fw-bold mb-3 mt-4">Add New Category</h2>
-          <form className="row g-3" onSubmit={handleSubmit}>
-            {[
-              { label: "Name", name: "name", type: "text" },
-              { label: "Description", name: "description", type: "text" },
-              { label: "Category", name: "category", type: "text" }
-            ].map(({ label, name, type }) => (
-              <div className="col-12" key={name}>
-                <label className="form-label">{label}</label>
-                <input
-                  type={type}
-                  name={name}
-                  placeholder={`Enter ${label.toLowerCase()}`}
-                  className="form-control"
-                  value={newCategory[name]}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-            ))}
-            <div className="col-12">
-              <button type="submit" className="btn btn-primary w-100">
-                Submit
-              </button>
-            </div>
-          </form>
+          <Input
+            placeholder="Search categories..."
+            allowClear
+            prefix={<SearchOutlined />}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ width: screens.xs ? "100%" : "200px" }}
+          />
+          <Button
+            type="primary"
+            onClick={() => setIsModalOpen(true)}
+            style={{ width: screens.xs ? "100%" : "auto" }}
+          >
+            + Add Category
+          </Button>
         </div>
-      )}
+      </div>
+
+      {/* Table */}
+      <Table
+        columns={getColumns()}
+        dataSource={filteredCategories}
+        rowKey="id"
+        size={screens.xs ? "small" : "middle"}
+        scroll={screens.xs ? { x: true } : undefined}
+        style={{
+          background: "white",
+          borderRadius: "8px",
+          padding: screens.xs ? "8px" : "12px",
+        }}
+        locale={{ emptyText: "No categories found" }}
+      />
+
+      {/* Modal */}
+      <Modal
+        title="Add New Category"
+        open={isModalOpen}
+        onCancel={() => setIsModalOpen(false)}
+        onOk={handleSubmit}
+        okText="Submit"
+        cancelText="Cancel"
+        width={screens.xs ? "90%" : 700}
+        style={{ top: screens.xs ? "16px" : "50px" }}
+      >
+        <div className="row g-3">
+          {[
+            { label: "Name", name: "name" },
+            { label: "Description", name: "description" },
+            { label: "Category", name: "category" },
+          ].map(({ label, name, type = "text" }) => (
+            <div className="col-12" key={name}>
+              <label className="form-label">{label}</label>
+              <Input
+                type={type}
+                name={name}
+                value={formData[name]}
+                onChange={handleChange}
+                required={name === "name"}
+                placeholder={`Enter ${label.toLowerCase()}`}
+              />
+            </div>
+          ))}
+        </div>
+      </Modal>
     </div>
   );
 };

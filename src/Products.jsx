@@ -1,198 +1,232 @@
-import React, { useState, useEffect } from 'react';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import { ref, push, onValue } from 'firebase/database';
-import { db } from './firebase';
-import './People.css';
+import React, { useState, useEffect } from "react";
+import { Table, Button, Modal, Input, Grid, Select } from "antd";
+import { SearchOutlined } from "@ant-design/icons";
+import { ref, push, onValue } from "firebase/database";
+import { db } from "./firebase";
+
+const { useBreakpoint } = Grid;
 
 const Products = () => {
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  const screens = useBreakpoint();
   const [products, setProducts] = useState([]);
-  const [newProduct, setNewProduct] = useState({
-    name: '',
-    category: '',
-    price: '',
-    currency: 'us $ (US Dollar)',
-    description: '',
-    ref: ''
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    category: "",
+    price: "",
+    currency: "us $ (US Dollar)",
+    description: "",
+    ref: ""
   });
-  const [searchQuery, setSearchQuery] = useState('');
 
+  // Fetch from Firebase
   useEffect(() => {
-    const productsRef = ref(db, 'products');
+    const productsRef = ref(db, "products");
     onValue(productsRef, (snapshot) => {
       const data = snapshot.val();
-      if (data) {
-        const productList = Object.keys(data).map((key) => ({
-          id: key,
-          ...data[key],
-        }));
-        setProducts(productList);
-      } else {
-        setProducts([]);
-      }
+      const list = data
+        ? Object.keys(data).map((key) => ({ id: key, ...data[key] }))
+        : [];
+      setProducts(list);
+      setFilteredProducts(list);
     });
   }, []);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewProduct({ ...newProduct, [name]: value });
+  // Search filter
+  useEffect(() => {
+    const filtered = products.filter(product =>
+      Object.values(product).some(value => 
+        value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    );
+    setFilteredProducts(filtered);
+  }, [searchTerm, products]);
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const productsRef = ref(db, 'products');
-    push(productsRef, newProduct)
-      .then(() => {
-        console.log("Product saved to Firebase!");
-        setNewProduct({ name: '', category: '', price: '', currency: 'us $ (US Dollar)', description: '', ref: '' });
-        setIsFormOpen(false);
-      })
-      .catch((error) => {
-        console.error("Error saving product: ", error);
+  const handleSelectChange = (value, name) => {
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const handleSubmit = async () => {
+    if (!formData.name.trim()) return;
+    try {
+      await push(ref(db, "products"), formData);
+      setFormData({
+        name: "",
+        category: "",
+        price: "",
+        currency: "us $ (US Dollar)",
+        description: "",
+        ref: ""
       });
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error("Error adding product:", error);
+    }
   };
 
-  const filteredProducts = products.filter(product =>
-    Object.values(product).some(value => 
-      value && value.toString().toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  );
+  // Responsive Columns
+  const getColumns = () => {
+    if (screens.xs) {
+      return [
+        {
+          title: "Product Details",
+          dataIndex: "name",
+          key: "name",
+          render: (_, record) => (
+            <div>
+              <strong>{record.name}</strong><br />
+              🏷️ {record.category || 'N/A'}<br />
+              💵 {record.price} {record.currency}<br />
+              #️⃣ {record.ref || 'N/A'}<br />
+              📝 {record.description || 'N/A'}
+            </div>
+          ),
+        },
+      ];
+    }
+
+    return [
+      { title: "Name", dataIndex: "name", key: "name" },
+      { title: "Category", dataIndex: "category", key: "category", render: (category) => category || 'N/A' },
+      { 
+        title: "Price", 
+        dataIndex: "price", 
+        key: "price",
+        render: (_, record) => `${record.price || 'N/A'} ${record.currency || ''}`
+      },
+      { title: "Ref", dataIndex: "ref", key: "ref", render: (ref) => ref || 'N/A' },
+      { 
+        title: "Description", 
+        dataIndex: "description", 
+        key: "description",
+        render: (description) => description || 'N/A'
+      },
+    ];
+  };
 
   return (
-    <div className="container-fluid bg-light py-2 px-1 px-md-3">
-      <main className="main-content">
-        <div className="bg-white p-4 shadow rounded">
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <h2 className="fs-3 fw-bold">Products List</h2>
-            <div className="d-flex flex-column flex-md-row gap-2 w-100">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Search..."
-                style={{ maxWidth: "250px" }}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              <button className="btn btn-outline-secondary" onClick={() => window.location.reload()}>Refresh</button>
-              <button className="btn btn-primary" onClick={() => setIsFormOpen(true)}>
-                Add New Product
-              </button>
-            </div>
-          </div>
-
-          <div className="table-responsive">
-            <table className="table table-bordered" style={{ tableLayout: 'fixed' }}>
-              <colgroup>
-                <col style={{ width: '20%' }} /> {/* Name */}
-                <col style={{ width: '15%' }} /> {/* Category */}
-                <col style={{ width: '10%' }} /> {/* Price */}
-                <col style={{ width: '10%' }} /> {/* Currency */}
-                <col style={{ width: '15%' }} /> {/* Ref */}
-                <col style={{ width: '30%' }} /> {/* Description */}
-              </colgroup>
-              <thead className="table-light">
-                <tr>
-                  {["Name", "Category", "Price", "Currency", "Ref", "Description"].map((heading) => (
-                    <th key={heading} className="text-center">{heading}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filteredProducts.length > 0 ? (
-                  filteredProducts.map((product) => (
-                    <tr key={product.id}>
-                      <td className="text-center text-nowrap">{product.name || 'N/A'}</td>
-                      <td className="text-center text-nowrap">{product.category || 'N/A'}</td>
-                      <td className="text-center font-monospace">{product.price || 'N/A'}</td>
-                      <td className="text-center">{product.currency || 'N/A'}</td>
-                      <td className="text-center font-monospace text-nowrap" style={{ overflow: 'visible' }}>
-                        {product.ref || 'N/A'}
-                      </td>
-                      <td className="text-wrap" style={{ minWidth: '200px' }}>
-                        {product.description || 'N/A'}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td className="text-center" colSpan="6">No data available</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </main>
-
-      {isFormOpen && (
+    <div
+      style={{
+        padding: screens.xs ? "12px" : "24px",
+        marginLeft: screens.xs ? "0" : "250px",
+        maxWidth: "1100px",
+        width: "100%",
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: screens.xs ? "column" : "row",
+          justifyContent: "space-between",
+          marginBottom: "16px",
+          gap: screens.xs ? "12px" : "8px",
+        }}
+      >
+        <h2 style={{ margin: screens.xs ? "0 0 8px 0" : "0" }}>Products List</h2>
         <div
-          className="position-fixed top-0 end-0 vh-100 bg-white shadow p-4"
           style={{
-            width: "350px",
-            zIndex: 1050,
-            transition: "transform 0.3s ease-in-out",
-            transform: isFormOpen ? "translateX(0)" : "translateX(100%)"
+            display: "flex",
+            gap: "8px",
+            flexDirection: screens.xs ? "column" : "row",
           }}
         >
-          <button className="btn-close position-absolute top-0 end-0 m-3" onClick={() => setIsFormOpen(false)}></button>
-          <h2 className="fs-3 fw-bold mb-3 mt-4">Add New Product</h2>
-
-          <form className="row g-3" onSubmit={handleSubmit}>
-            {[
-              { label: "Name", name: "name", type: "text" },
-              { label: "Category", name: "category", type: "text" },
-              { label: "Price", name: "price", type: "number" },
-              { label: "Ref", name: "ref", type: "text" },
-            ].map(({ label, name, type }) => (
-              <div className="col-12" key={name}>
-                <label className="form-label">{label}</label>
-                <input
-                  type={type}
-                  name={name}
-                  placeholder={`Enter ${label.toLowerCase()}`}
-                  className="form-control"
-                  value={newProduct[name]}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-            ))}
-
-            <div className="col-12">
-              <label className="form-label">Currency</label>
-              <select
-                className="form-select"
-                name="currency"
-                value={newProduct.currency}
-                onChange={handleInputChange}
-                required
-              >
-                <option value="us $ (US Dollar)">us $ (US Dollar)</option>
-                <option value="€ (Euro)">€ (Euro)</option>
-                <option value="₹ (INR)">₹ (INR)</option>
-              </select>
-            </div>
-
-            <div className="col-12">
-              <label className="form-label">Description</label>
-              <textarea
-                name="description"
-                className="form-control"
-                placeholder="Enter product description"
-                rows="3"
-                value={newProduct.description}
-                onChange={handleInputChange}
-              ></textarea>
-            </div>
-
-            <div className="col-12">
-              <button type="submit" className="btn btn-primary w-100">
-                Submit
-              </button>
-            </div>
-          </form>
+          <Input
+            placeholder="Search products..."
+            allowClear
+            prefix={<SearchOutlined />}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ width: screens.xs ? "100%" : "200px" }}
+          />
+          <Button
+            type="primary"
+            onClick={() => setIsModalOpen(true)}
+            style={{ width: screens.xs ? "100%" : "auto" }}
+          >
+            + Add Product
+          </Button>
         </div>
-      )}
+      </div>
+
+      {/* Table */}
+      <Table
+        columns={getColumns()}
+        dataSource={filteredProducts}
+        rowKey="id"
+        size={screens.xs ? "small" : "middle"}
+        scroll={screens.xs ? { x: true } : undefined}
+        style={{
+          background: "white",
+          borderRadius: "8px",
+          padding: screens.xs ? "8px" : "12px",
+        }}
+        locale={{ emptyText: "No products found" }}
+      />
+
+      {/* Modal */}
+      <Modal
+        title="Add New Product"
+        open={isModalOpen}
+        onCancel={() => setIsModalOpen(false)}
+        onOk={handleSubmit}
+        okText="Submit"
+        cancelText="Cancel"
+        width={screens.xs ? "90%" : 700}
+        style={{ top: screens.xs ? "16px" : "50px" }}
+      >
+        <div className="row g-3">
+          {[
+            { label: "Name", name: "name" },
+            { label: "Category", name: "category" },
+            { label: "Price", name: "price", type: "number" },
+            { label: "Ref", name: "ref" },
+          ].map(({ label, name, type = "text" }) => (
+            <div className="col-12" key={name}>
+              <label className="form-label">{label}</label>
+              <Input
+                type={type}
+                name={name}
+                value={formData[name]}
+                onChange={handleChange}
+                required={name === "name"}
+                placeholder={`Enter ${label.toLowerCase()}`}
+              />
+            </div>
+          ))}
+          
+          <div className="col-12">
+            <label className="form-label">Currency</label>
+            <Select
+              style={{ width: '100%' }}
+              value={formData.currency}
+              onChange={(value) => handleSelectChange(value, "currency")}
+              options={[
+                { value: 'us $ (US Dollar)', label: 'us $ (US Dollar)' },
+                { value: '€ (Euro)', label: '€ (Euro)' },
+                { value: '₹ (INR)', label: '₹ (INR)' },
+              ]}
+            />
+          </div>
+
+          <div className="col-12">
+            <label className="form-label">Description</label>
+            <Input.TextArea
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              placeholder="Enter product description"
+              rows={3}
+            />
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
