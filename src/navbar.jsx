@@ -158,6 +158,15 @@ const Navbar = () => {
               <FaMoneyBillWave size={18} /> Payments
             </Link>
           </li>
+            <li className={location.pathname === "/orders" ? "active" : ""}>
+            <Link 
+              to="/orders" 
+              className="nav-item"
+              onClick={handleNavLinkClick}
+            >
+              <FaMoneyBillWave size={18} /> Orders
+            </Link>
+          </li>
           <li className={location.pathname === "/companies" ? "active" : ""}>
             <Link 
               to="/companies" 

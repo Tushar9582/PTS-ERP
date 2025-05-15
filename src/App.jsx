@@ -22,6 +22,8 @@ import Settings from "./Settings";
 import CustomForm from "./CustomForm";
 import { DarkModeProvider } from "./DarkModeContext"; // Import the DarkModeProvider
 import Chatbox from "./Chatbox";
+import Orders from "./orders/Orders";
+import Ordermodal from "./orders/OrderModal";
 function App() {
   const [user, setUser] = useState(null);
 
@@ -63,6 +65,8 @@ function App() {
                       <Route path="/reports" element={<Reports />} />
                       <Route path="customform" element={<CustomForm/>} />
                       <Route path="/chatbox" element={<Chatbox />} />
+                      <Route path="/orders" element={<Orders/>}/>
+                      <Route paht="/orderDetails" element={<Ordermodal/>}/>
                       <Route
                         path="/settings"
                         element={<Settings logout={signOut} />}
