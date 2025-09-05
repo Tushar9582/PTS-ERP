@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useContext } from "react";
-import { ref, push, set, get } from "firebase/database";
+import { ref, push, set, get, onValue } from "firebase/database";
 import { db } from "./firebase";
 import Swal from "sweetalert2";
 import { DarkModeContext } from "./DarkModeContext";
@@ -9,6 +9,15 @@ const NewInvoiceForm = ({ onSave, onClose, customers = [], companies = [], peopl
   const { darkMode: contextDarkMode } = useContext(DarkModeContext);
   const isDarkMode = darkMode || contextDarkMode;
   const today = new Date().toISOString().split("T")[0];
+  const [userId, setUserId] = useState(null);
+
+  // Get user ID from localStorage
+  useEffect(() => {
+    const storedUserId = localStorage.getItem('userId');
+    if (storedUserId) {
+      setUserId(storedUserId);
+    }
+  }, []);
 
   const [invoice, setInvoice] = useState({
     number: "",
@@ -27,20 +36,30 @@ const NewInvoiceForm = ({ onSave, onClose, customers = [], companies = [], peopl
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
+  // Fetch products from Firebase under user's path
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const snapshot = await get(ref(db, "products"));
-        if (snapshot.exists()) {
-          const productData = snapshot.val();
-          setProducts(Object.keys(productData).map((key) => ({ id: key, name: productData[key].name })));
-        }
-      } catch (error) {
-        console.error("Error fetching products:", error);
-      }
-    };
-    fetchProducts();
-  }, []);
+    if (!userId) return;
+
+    const userProductsRef = ref(db, `users/${userId}/products`);
+    const unsubscribe = onValue(userProductsRef, (snapshot) => {
+      const data = snapshot.val();
+      const list = data ? Object.keys(data).map((key) => ({ 
+        id: key, 
+        ...data[key] 
+      })) : [];
+      setProducts(list);
+    }, (error) => {
+      console.error("Error fetching products:", error);
+      Swal.fire({
+        title: "Error!",
+        text: "Failed to load products",
+        icon: "error",
+        background: isDarkMode ? "#2a2a3a" : "#ffffff",
+        color: isDarkMode ? "#e0e0e0" : "#000000",
+      });
+    });
+    return () => unsubscribe();
+  }, [userId, isDarkMode]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -68,11 +87,36 @@ const NewInvoiceForm = ({ onSave, onClose, customers = [], companies = [], peopl
       const updatedProducts = prevInvoice.productIds.includes(productId)
         ? prevInvoice.productIds.filter((id) => id !== productId)
         : [...prevInvoice.productIds, productId];
-      return { ...prevInvoice, productIds: updatedProducts };
+      
+      // Calculate total based on selected products
+      let newTotal = 0;
+      updatedProducts.forEach(id => {
+        const product = products.find(p => p.id === id);
+        if (product && product.price) {
+          newTotal += parseFloat(product.price);
+        }
+      });
+      
+      return { 
+        ...prevInvoice, 
+        productIds: updatedProducts,
+        total: newTotal.toFixed(2)
+      };
     });
   };
 
   const handleSave = () => {
+    if (!userId) {
+      Swal.fire({
+        title: "Error!",
+        text: "User not authenticated. Please log in again.",
+        icon: "error",
+        background: isDarkMode ? "#2a2a3a" : "#ffffff",
+        color: isDarkMode ? "#e0e0e0" : "#000000",
+      });
+      return;
+    }
+
     if (
       !invoice.number.trim() ||
       !invoice.clientId.trim() ||
@@ -106,7 +150,7 @@ const NewInvoiceForm = ({ onSave, onClose, customers = [], companies = [], peopl
       return;
     }
 
-    const newInvoiceRef = push(ref(db, "invoices"));
+    const newInvoiceRef = push(ref(db, `users/${userId}/invoices`));
     set(newInvoiceRef, { ...invoice, total: totalValue })
       .then(() => {
         Swal.fire({
@@ -192,19 +236,42 @@ const NewInvoiceForm = ({ onSave, onClose, customers = [], companies = [], peopl
               {invoice.productIds.length > 0 ? `${invoice.productIds.length} selected` : "Select Products"}
             </button>
             <div className={`dropdown-menu ${dropdownOpen ? "show" : ""} ${isDarkMode ? 'dark-dropdown-menu' : ''}`}>
-              {products.map((product) => (
-                <label key={product.id} className={`dropdown-item ${isDarkMode ? 'dark-dropdown-item' : ''}`}>
-                  <input
-                    type="checkbox"
-                    checked={invoice.productIds.includes(product.id)}
-                    onChange={() => handleProductSelection(product.id)}
-                    className={isDarkMode ? "dark-checkbox" : ""}
-                  />
-                  <span className={isDarkMode ? "dark-product-text" : ""}>{product.name}</span>
-                </label>
-              ))}
+              {products.length > 0 ? (
+                products.map((product) => (
+                  <label key={product.id} className={`dropdown-item ${isDarkMode ? 'dark-dropdown-item' : ''}`}>
+                    <input
+                      type="checkbox"
+                      checked={invoice.productIds.includes(product.id)}
+                      onChange={() => handleProductSelection(product.id)}
+                      className={isDarkMode ? "dark-checkbox" : ""}
+                    />
+                    <span className={isDarkMode ? "dark-product-text" : ""}>
+                      {product.name} - {product.price} {product.currency || ""}
+                    </span>
+                  </label>
+                ))
+              ) : (
+                <div className={`dropdown-item ${isDarkMode ? 'dark-dropdown-item' : ''}`}>
+                  No products available. Please add products first.
+                </div>
+              )}
             </div>
           </div>
+          {invoice.productIds.length > 0 && (
+            <div className="selected-products">
+              <h4>Selected Products:</h4>
+              <ul>
+                {invoice.productIds.map(id => {
+                  const product = products.find(p => p.id === id);
+                  return product ? (
+                    <li key={id}>
+                      {product.name} - {product.price} {product.currency || ""}
+                    </li>
+                  ) : null;
+                })}
+              </ul>
+            </div>
+          )}
         </div>
 
         <div className="form-group">
@@ -255,6 +322,7 @@ const NewInvoiceForm = ({ onSave, onClose, customers = [], companies = [], peopl
             onChange={handleChange}
             className={isDarkMode ? "dark-input" : ""}
             placeholder="0.00"
+            readOnly
           />
         </div>
 
@@ -296,6 +364,7 @@ const NewInvoiceForm = ({ onSave, onClose, customers = [], companies = [], peopl
             type="button"
             className={`save-btn ${isDarkMode ? 'dark-save-btn' : ''}`}
             onClick={handleSave}
+            disabled={products.length === 0}
           >
             Save Invoice
           </button>

@@ -1,11 +1,11 @@
-import { useState, useEffect, useContext } from "react";
-import { db } from "./firebase";
-import { ref, push, onValue, remove, set } from "firebase/database";
+import "bootstrap/dist/css/bootstrap.min.css";
+import { onValue, push, ref, remove } from "firebase/database";
+import { useContext, useEffect, useState } from "react";
+import { FaTrash, FaWhatsapp } from "react-icons/fa";
 import Swal from "sweetalert2";
 import * as XLSX from "xlsx";
-import "bootstrap/dist/css/bootstrap.min.css";
-import { FaWhatsapp, FaTrash } from "react-icons/fa";
 import { DarkModeContext } from "./DarkModeContext";
+import { db } from "./firebase";
 import "./Leads.css";
 
 const Leads = () => {
@@ -25,11 +25,22 @@ const Leads = () => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [selectedLeads, setSelectedLeads] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
+  const [userId, setUserId] = useState(null);
 
-  // Fetch leads from Firebase
+  // Get user ID from localStorage
   useEffect(() => {
-    const leadsRef = ref(db, "leads");
-    const unsubscribe = onValue(leadsRef, (snapshot) => {
+    const storedUserId = localStorage.getItem('userId');
+    if (storedUserId) {
+      setUserId(storedUserId);
+    }
+  }, []);
+
+  // Fetch leads from Firebase under user's path
+  useEffect(() => {
+    if (!userId) return;
+
+    const userLeadsRef = ref(db, `users/${userId}/leads`);
+    const unsubscribe = onValue(userLeadsRef, (snapshot) => {
       const data = snapshot.val();
       const leadsList = data ? Object.keys(data).map(key => ({ 
         id: key, 
@@ -38,7 +49,7 @@ const Leads = () => {
       setLeads(leadsList);
     });
     return () => unsubscribe();
-  }, []);
+  }, [userId]);
 
   // Handle select all toggle
   useEffect(() => {
@@ -52,8 +63,13 @@ const Leads = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!userId) {
+      Swal.fire("Error", "User not authenticated. Please log in again.", "error");
+      return;
+    }
+
     try {
-      await push(ref(db, "leads"), formData);
+      await push(ref(db, `users/${userId}/leads`), formData);
       Swal.fire("Success", "Lead added successfully", "success");
       setFormData({ name: "", email: "", branch: "", type: "", phone: "" });
       setIsFormOpen(false);
@@ -105,38 +121,38 @@ const Leads = () => {
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
         if (!jsonData.length) {
-          Swal.fire("Error", "Excel file is empty", "error");
-          return;
-        }
+      Swal.fire("Error", "Excel file is empty", "error");
+      return;
+    }
 
-        const mappedData = jsonData.map((row, i) => ({
-          id: `temp-${i}`,
-          name: row.Name || row.name || "",
-          email: row.Email || row.email || "",
-          branch: row.Branch || row.branch || "",
-          type: row.Type || row.type || "",
-          phone: String(row.Phone || row.phone || "")
-        }));
+    const mappedData = jsonData.map((row, i) => ({
+      id: `temp-${i}`,
+      name: row.Name || row.name || "",
+      email: row.Email || row.email || "",
+      branch: row.Branch || row.branch || "",
+      type: row.Type || row.type || "",
+      phone: String(row.Phone || row.phone || "")
+    }));
 
-        setPreviewData(mappedData);
-        setIsPreviewOpen(true);
-      } catch (error) {
-        Swal.fire("Error", "Invalid Excel file format", "error");
-      } finally {
-        setUploadLoading(false);
-      }
-    };
+    setPreviewData(mappedData);
+    setIsPreviewOpen(true);
+  } catch (error) {
+    Swal.fire("Error", "Invalid Excel file format", "error");
+  } finally {
+    setUploadLoading(false);
+  }
+};
 
-    reader.onerror = () => {
-      Swal.fire("Error", "Failed to read file", "error");
-      setUploadLoading(false);
-    };
+reader.onerror = () => {
+  Swal.fire("Error", "Failed to read file", "error");
+  setUploadLoading(false);
+};
 
-    reader.readAsArrayBuffer(file);
+reader.readAsArrayBuffer(file);
   };
 
   const confirmUpload = async () => {
-    if (!previewData.length) return;
+    if (!previewData.length || !userId) return;
 
     setUploadLoading(true);
     try {
@@ -152,7 +168,7 @@ const Leads = () => {
       await Promise.all(
         validLeads.map(lead => {
           const { name, email, branch, type, phone } = lead;
-          return push(ref(db, "leads"), { name, email, branch, type, phone });
+          return push(ref(db, `users/${userId}/leads`), { name, email, branch, type, phone });
         })
       );
 
@@ -167,6 +183,8 @@ const Leads = () => {
   };
 
   const handleDeleteLead = async (id) => {
+    if (!userId) return;
+
     const result = await Swal.fire({
       title: "Confirm Delete",
       text: "Are you sure you want to delete this lead?",
@@ -176,7 +194,7 @@ const Leads = () => {
 
     if (result.isConfirmed) {
       try {
-        await remove(ref(db, `leads/${id}`));
+        await remove(ref(db, `users/${userId}/leads/${id}`));
         Swal.fire("Deleted", "Lead removed successfully", "success");
       } catch (error) {
         Swal.fire("Error", "Failed to delete lead", "error");
@@ -185,7 +203,7 @@ const Leads = () => {
   };
 
   const handleBulkDelete = async () => {
-    if (!selectedLeads.length) return;
+    if (!selectedLeads.length || !userId) return;
 
     const result = await Swal.fire({
       title: `Delete ${selectedLeads.length} leads?`,
@@ -197,11 +215,34 @@ const Leads = () => {
     if (result.isConfirmed) {
       try {
         await Promise.all(
-          selectedLeads.map(id => remove(ref(db, `leads/${id}`)))
+          selectedLeads.map(id => remove(ref(db, `users/${userId}/leads/${id}`)))
         );
         setSelectedLeads([]);
         setSelectAll(false);
         Swal.fire("Deleted", "Selected leads removed", "success");
+      } catch (error) {
+        Swal.fire("Error", "Failed to delete leads", "error");
+      }
+    }
+  };
+
+  const handleDeleteAllLeads = async () => {
+    if (!leads.length || !userId) {
+      Swal.fire("Info", "No leads to delete", "info");
+      return;
+    }
+
+    const result = await Swal.fire({
+      title: `Delete all ${leads.length} leads?`,
+      text: "This action cannot be undone",
+      icon: "warning",
+      showCancelButton: true
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await remove(ref(db, `users/${userId}/leads`));
+        Swal.fire("Deleted", "All leads removed successfully", "success");
       } catch (error) {
         Swal.fire("Error", "Failed to delete leads", "error");
       }
@@ -232,24 +273,27 @@ const Leads = () => {
             <button 
               className="btn btn-primary"
               onClick={() => setIsFormOpen(true)}
+              style={{backgroundColor: '#007bff', borderColor: '#007bff'}}
             >
               Add Lead
             </button>
             <button
               className="btn btn-danger"
-              onClick={handleBulkDelete}
-              disabled={!selectedLeads.length}
+              onClick={handleDeleteAllLeads}
+              disabled={!leads.length}
+              style={{backgroundColor: '#dc3545', borderColor: '#dc3545'}}
             >
-              Delete Selected
+              Delete All
             </button>
             <button
               className="btn btn-success"
               onClick={exportToExcel}
               disabled={excelLoading}
+              style={{backgroundColor: '#007bff', borderColor: '#007bff'}}
             >
               {excelLoading ? "Exporting..." : "Export Excel"}
             </button>
-            <label className="btn btn-info mb-0 position-relative">
+            <label className="btn btn-success mb-0 position-relative" style={{backgroundColor: '#28a745', borderColor: '#28a745'}}>
               {uploadLoading ? "Processing..." : "Import Excel"}
               <input
                 type="file"
@@ -304,12 +348,14 @@ const Leads = () => {
                         className="btn btn-sm btn-success me-1"
                         onClick={() => handleWhatsAppClick(lead.phone)}
                         disabled={!lead.phone}
+                        style={{backgroundColor: '#28a745', borderColor: '#28a745'}}
                       >
                         <FaWhatsapp />
                       </button>
                       <button
                         className="btn btn-sm btn-danger"
                         onClick={() => handleDeleteLead(lead.id)}
+                        style={{backgroundColor: '#dc3545', borderColor: '#dc3545'}}
                       >
                         <FaTrash />
                       </button>
@@ -332,14 +378,17 @@ const Leads = () => {
       {isFormOpen && (
         <div className="modal-overlay">
           <div className={`modal-content ${darkMode ? "bg-dark" : ""}`}>
-            <div className="modal-header">
+            <div className="modal-header1 d-flex justify-content-between align-items-center">
               <h5 className="modal-title">Add New Lead</h5>
               <button
                 type="button"
                 className="btn-close"
                 onClick={() => setIsFormOpen(false)}
                 aria-label="Close"
-              />
+                style={{color: '#000', backgroundColor: 'transparent', border: 'none', fontSize: '1.5rem', marginLeft: 'auto'}}
+              >
+                &times;
+              </button>
             </div>
             <div className="modal-body">
               <form onSubmit={handleSubmit}>
@@ -358,7 +407,7 @@ const Leads = () => {
                     />
                   </div>
                 ))}
-                <button type="submit" className="btn btn-primary w-100">
+                <button type="submit" className="btn btn-primary w-100" style={{backgroundColor: '#007bff', borderColor: '#007bff'}}>
                   Submit
                 </button>
               </form>
@@ -428,9 +477,10 @@ const Leads = () => {
               </button>
               <button
                 type="button"
-                className="btn btn-primary"
+                className="btn btn-success"
                 onClick={confirmUpload}
                 disabled={uploadLoading}
+                style={{backgroundColor: '#28a745', borderColor: '#28a745'}}
               >
                 {uploadLoading ? "Uploading..." : "Confirm Upload"}
               </button>

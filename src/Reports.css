@@ -10,7 +10,7 @@
 }
 
 .main-container.dark-mode {
-  background-color: #1a1a2e;
+  background-color: #000000; /* Pure black for dark mode */
 }
 
 .report-container {
@@ -24,9 +24,9 @@
 }
 
 .dark-card {
-  background-color: #2a2a3a;
+  background-color: #121212; /* Darker shade for cards */
   color: #ffffff;
-  border-color: #3a3a4a;
+  border-color: #333333;
 }
 
 /* Chart tooltip styling */
@@ -71,9 +71,36 @@
 /* Dark mode specific styles */
 .dark-mode .recharts-cartesian-grid-horizontal line,
 .dark-mode .recharts-cartesian-grid-vertical line {
-  stroke: #3a3a4a;
+  stroke: #333333; /* Darker grid lines */
 }
 
 .dark-mode .recharts-legend-item-text {
+  fill: #ffffff !important;
+}
+
+/* Additional dark mode elements */
+.dark-mode .card {
+  background-color: #121212;
+  color: #ffffff;
+  border-color: #333333;
+}
+
+.dark-mode .recharts-tooltip-wrapper {
+  background-color: #121212 !important;
+  border: 1px solid #333333 !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .recharts-default-tooltip {
+  background-color: #121212 !important;
+  border: 1px solid #333333 !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .recharts-cartesian-axis-tick-value {
+  fill: #ffffff !important;
+}
+
+.dark-mode .recharts-label {
   fill: #ffffff !important;
 }

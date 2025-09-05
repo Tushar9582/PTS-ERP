@@ -1,19 +1,17 @@
 import React from "react";
 import "./OrderModel.css";
+import { FiX } from "react-icons/fi";
 
 export default function OrderModal({ order, onClose }) {
   return (
     <div className="modal-overlay">
       <div className="modal-container">
         <button onClick={onClose} className="modal-close-btn">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-          </svg>
+          <FiX size={20} />
         </button>
         
         <div className="modal-header">
           <h2>Order Details</h2>
-          {/* <div className="order-id">Order #{order.id.slice(0, 8)}</div> */}
         </div>
         
         <div className="modal-content">
@@ -56,7 +54,7 @@ export default function OrderModal({ order, onClose }) {
               </div>
               <div className="info-item">
                 <span className="info-label">Status:</span>
-                <span className="button" style={{ 
+                <span className="status-badge" style={{ 
                   backgroundColor: 
                     order.status === 'pending' ? '#FFC107' :
                     order.status === 'shipped' ? '#2196F3' :
@@ -97,6 +95,13 @@ export default function OrderModal({ order, onClose }) {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Added Cancel Button */}
+          <div className="modal-footer">
+            <button onClick={onClose} className="cancel-btn">
+              Close
+            </button>
           </div>
         </div>
       </div>

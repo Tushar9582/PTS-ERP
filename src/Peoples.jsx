@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from "react";
-import { Table, Button, Modal, Input, Grid, Select, Space, Tag, message } from "antd";
-import { SearchOutlined, EditOutlined, DeleteOutlined, AudioOutlined, ReloadOutlined } from "@ant-design/icons";
-import { ref, push, onValue, remove, update } from "firebase/database";
+import { AudioOutlined, DeleteOutlined, EditOutlined, ReloadOutlined, SearchOutlined } from "@ant-design/icons";
+import { Button, Grid, Input, message, Modal, Popconfirm, Space, Table } from "antd";
+import { onValue, push, ref, remove, update } from "firebase/database";
+import { useContext, useEffect, useState } from "react";
+import { DarkModeContext } from "./DarkModeContext";
 import { db } from "./firebase";
 
 const { useBreakpoint } = Grid;
 const { TextArea } = Input;
 
 const Peoples = () => {
+  const { darkMode } = useContext(DarkModeContext);
   const screens = useBreakpoint();
   const [people, setPeople] = useState([]);
   const [filteredPeople, setFilteredPeople] = useState([]);
@@ -24,12 +26,28 @@ const Peoples = () => {
   const [aiResponse, setAiResponse] = useState("");
   const [editId, setEditId] = useState(null);
   const [listening, setListening] = useState(false);
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [userId, setUserId] = useState(null);
   let recognition;
 
-  // Fetch from Firebase
+  // Get user ID from localStorage
   useEffect(() => {
-    const peopleRef = ref(db, "people");
-    onValue(peopleRef, (snapshot) => {
+    const storedUserId = localStorage.getItem('userId');
+    if (storedUserId) {
+      setUserId(storedUserId);
+    }
+  }, []);
+
+  // Fetch from Firebase under user's path
+  useEffect(() => {
+    if (!userId) {
+      setPeople([]);
+      setFilteredPeople([]);
+      return;
+    }
+    
+    const userPeoplesRef = ref(db, `users/${userId}/peoples`);
+    const unsubscribe = onValue(userPeoplesRef, (snapshot) => {
       const data = snapshot.val();
       const list = data
         ? Object.keys(data).map((key) => ({ id: key, ...data[key] }))
@@ -37,15 +55,15 @@ const Peoples = () => {
       setPeople(list);
       setFilteredPeople(list);
     });
-  }, []);
+    return () => unsubscribe();
+  }, [userId]);
 
   // Search filter
   useEffect(() => {
     const filtered = people.filter(person =>
       Object.values(person).some(value => 
         value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    );
+      ));
     setFilteredPeople(filtered);
   }, [searchTerm, people]);
 
@@ -54,16 +72,16 @@ const Peoples = () => {
   };
 
   const handleSubmit = async () => {
-    if (!formData.name.trim()) {
+    if (!formData.name.trim() || !userId) {
       message.error("Name is required");
       return;
     }
     try {
       if (editId) {
-        await update(ref(db, `people/${editId}`), formData);
+        await update(ref(db, `users/${userId}/peoples/${editId}`), formData);
         message.success("Person updated successfully");
       } else {
-        await push(ref(db, "people"), formData);
+        await push(ref(db, `users/${userId}/peoples`), formData);
         message.success("Person added successfully");
       }
       setFormData({ name: "", company: "", country: "", phone: "", email: "" });
@@ -88,8 +106,10 @@ const Peoples = () => {
   };
 
   const handleDelete = async (id) => {
+    if (!userId) return;
+    
     try {
-      await remove(ref(db, `people/${id}`));
+      await remove(ref(db, `users/${userId}/peoples/${id}`));
       message.success("Person deleted successfully");
     } catch (error) {
       console.error("Error deleting person:", error);
@@ -97,7 +117,46 @@ const Peoples = () => {
     }
   };
 
+  const handleDeleteSelected = async () => {
+    if (selectedRowKeys.length === 0 || !userId) {
+      message.warning("Please select at least one person to delete");
+      return;
+    }
+    
+    try {
+      const deletePromises = selectedRowKeys.map(id => remove(ref(db, `users/${userId}/peoples/${id}`)));
+      await Promise.all(deletePromises);
+      message.success(`Deleted ${selectedRowKeys.length} person(s)`);
+      setSelectedRowKeys([]);
+    } catch (error) {
+      console.error("Error deleting people:", error);
+      message.error("Error deleting selected people");
+    }
+  };
+
+  const handleDeleteAllPeoples = async () => {
+    if (!userId) return;
+    
+    if (people.length === 0) {
+      message.info("No people to delete");
+      return;
+    }
+
+    try {
+      await remove(ref(db, `users/${userId}/peoples`));
+      message.success("All people deleted successfully");
+    } catch (error) {
+      console.error("Error deleting all people:", error);
+      message.error("Error deleting all people");
+    }
+  };
+
   const handleAICommand = () => {
+    if (!userId) {
+      message.error("User not authenticated");
+      return;
+    }
+    
     const command = aiCommand.toLowerCase();
     if (command.includes("name is") && command.includes("submit")) {
       const name = command.match(/name is (.*?),/i)?.[1]?.trim();
@@ -106,7 +165,7 @@ const Peoples = () => {
       const phone = command.match(/phone is (.*?),/i)?.[1]?.trim();
       const email = command.match(/email is (.*?)(,|submit)/i)?.[1]?.trim();
       if (name && company && country && phone && email) {
-        push(ref(db, 'people'), { name, company, country, phone, email });
+        push(ref(db, `users/${userId}/peoples`), { name, company, country, phone, email });
         setAiResponse("✔️ Person added successfully via command!");
         setAiCommand("");
         message.success("Person added via AI command");
@@ -118,7 +177,7 @@ const Peoples = () => {
       const nameToDelete = command.match(/name is (.*)/i)?.[1]?.trim();
       const person = people.find(p => p.name.toLowerCase() === nameToDelete.toLowerCase());
       if (person) {
-        remove(ref(db, `people/${person.id}`));
+        remove(ref(db, `users/${userId}/peoples/${person.id}`));
         setAiResponse(`🗑️ Deleted person with name '${nameToDelete}'`);
         message.success(`Deleted ${nameToDelete}`);
       } else {
@@ -134,7 +193,7 @@ const Peoples = () => {
       if (command.includes("email is")) updates.email = command.match(/email is (.*?)(,|submit)/i)?.[1]?.trim();
       const person = people.find(p => p.name.toLowerCase() === nameToEdit.toLowerCase());
       if (person) {
-        update(ref(db, `people/${person.id}`), updates);
+        update(ref(db, `users/${userId}/peoples/${person.id}`), updates);
         setAiResponse(`✏️ Updated person '${nameToEdit}'`);
         message.success(`Updated ${nameToEdit}`);
       } else {
@@ -178,7 +237,20 @@ const Peoples = () => {
     recognition.start();
   };
 
-  // Responsive Columns
+  const onSelectChange = (newSelectedRowKeys) => {
+    setSelectedRowKeys(newSelectedRowKeys);
+  };
+
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: onSelectChange,
+    selections: [
+      Table.SELECTION_ALL,
+      Table.SELECTION_INVERT,
+      Table.SELECTION_NONE,
+    ],
+  };
+
   const getColumns = () => {
     if (screens.xs) {
       return [
@@ -187,12 +259,12 @@ const Peoples = () => {
           dataIndex: "name",
           key: "name",
           render: (_, record) => (
-            <div>
-              <strong>👤 {record.name}</strong><br />
-              🏢 {record.company || 'N/A'}<br />
-              🌎 {record.country || 'N/A'}<br />
-              📞 {record.phone || 'N/A'}<br />
-              ✉️ {record.email || 'N/A'}
+            <div className={`mobile-person-card ${darkMode ? "dark-mobile-card" : ""}`}>
+              <strong style={{ color: darkMode ? "#f1f1f1" : "inherit" }}>👤 {record.name}</strong><br />
+              <span style={{ color: darkMode ? "#d9d9d9" : "#666" }}>🏢 {record.company || 'N/A'}</span><br />
+              <span style={{ color: darkMode ? "#d9d9d9" : "#666" }}>🌎 {record.country || 'N/A'}</span><br />
+              <span style={{ color: darkMode ? "#d9d9d9" : "#666" }}>📞 {record.phone || 'N/A'}</span><br />
+              <span style={{ color: darkMode ? "#d9d9d9" : "#666" }}>✉️ {record.email || 'N/A'}</span>
               <div style={{ marginTop: 8 }}>
                 <Space>
                   <Button 
@@ -202,16 +274,22 @@ const Peoples = () => {
                       handleEdit(record);
                     }}
                     size="small"
+                    className={darkMode ? "dark-button" : ""}
                   />
-                  <Button 
-                    icon={<DeleteOutlined />} 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(record.id);
-                    }}
-                    size="small" 
-                    danger
-                  />
+                  <Popconfirm
+                    title="Are you sure to delete this person?"
+                    onConfirm={() => handleDelete(record.id)}
+                    okText="Yes"
+                    cancelText="No"
+                    className={darkMode ? "dark-popconfirm" : ""}
+                  >
+                    <Button 
+                      icon={<DeleteOutlined />} 
+                      size="small" 
+                      danger
+                      className="delete-button"
+                    />
+                  </Popconfirm>
                 </Space>
               </div>
             </div>
@@ -225,12 +303,32 @@ const Peoples = () => {
         title: "Name", 
         dataIndex: "name", 
         key: "name",
-        render: (name) => <strong>👤 {name}</strong>
+        render: (name) => <strong style={{ color: darkMode ? "#f1f1f1" : "inherit" }}>👤 {name}</strong>
       },
-      { title: "Company", dataIndex: "company", key: "company", render: (company) => company || 'N/A' },
-      { title: "Country", dataIndex: "country", key: "country", render: (country) => country || 'N/A' },
-      { title: "Phone", dataIndex: "phone", key: "phone", render: (phone) => phone || 'N/A' },
-      { title: "Email", dataIndex: "email", key: "email", render: (email) => email || 'N/A' },
+      { 
+        title: "Company", 
+        dataIndex: "company", 
+        key: "company", 
+        render: (company) => <span style={{ color: darkMode ? "#d9d9d9" : "#666" }}>{company || 'N/A'}</span> 
+      },
+      { 
+        title: "Country", 
+        dataIndex: "country", 
+        key: "country", 
+        render: (country) => <span style={{ color: darkMode ? "#d9d9d9" : "#666" }}>{country || 'N/A'}</span> 
+      },
+      { 
+        title: "Phone", 
+        dataIndex: "phone", 
+        key: "phone", 
+        render: (phone) => <span style={{ color: darkMode ? "#d9d9d9" : "#666" }}>{phone || 'N/A'}</span> 
+      },
+      { 
+        title: "Email", 
+        dataIndex: "email", 
+        key: "email", 
+        render: (email) => <span style={{ color: darkMode ? "#d9d9d9" : "#666" }}>{email || 'N/A'}</span> 
+      },
       {
         title: "Actions",
         key: "actions",
@@ -239,111 +337,261 @@ const Peoples = () => {
             <Button 
               icon={<EditOutlined />} 
               onClick={() => handleEdit(record)}
+              className={darkMode ? "dark-button" : ""}
             />
-            <Button 
-              icon={<DeleteOutlined />} 
-              onClick={() => handleDelete(record.id)}
-              danger
-            />
+            <Popconfirm
+              title="Are you sure to delete this person?"
+              onConfirm={() => handleDelete(record.id)}
+              okText="Yes"
+              cancelText="No"
+              className={darkMode ? "dark-popconfirm" : ""}
+            >
+              <Button 
+                icon={<DeleteOutlined />} 
+                danger
+                className="delete-button"
+              />
+            </Popconfirm>
           </Space>
         ),
       },
     ];
   };
 
+  if (!userId) {
+    return (
+      <div className={`people-container ${darkMode ? "dark-mode" : ""}`} style={{ 
+        padding: screens.xs ? "16px" : "24px 24px 24px 120px",
+        maxWidth: '1400px',
+        margin: '0 auto',
+        marginLeft: screens.xs ? '0' : '180px',
+        backgroundColor: darkMode ? "#141414" : "#f8f9fa",
+        color: darkMode ? "#f1f1f1" : "inherit",
+        minHeight: '100vh',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center'
+      }}>
+        <p style={{ color: darkMode ? "#f1f1f1" : "inherit" }}>Please sign in to access your people</p>
+      </div>
+    );
+  }
+
   return (
-    <div
-      style={{
-        padding: screens.xs ? "12px" : "24px",
-        marginLeft: screens.xs ? "0" : "250px",
-        maxWidth: "1100px",
-        width: "100%",
-      }}
-    >
+    <div className={`people-container ${darkMode ? "dark-mode" : ""}`} style={{ 
+      padding: screens.xs ? "16px" : "24px 24px 24px 120px",
+      maxWidth: '1400px',
+      margin: '0 auto',
+      marginLeft: screens.xs ? '0' : '180px',
+      backgroundColor: darkMode ? "#141414" : "#f8f9fa",
+      color: darkMode ? "#f1f1f1" : "inherit",
+      minHeight: '100vh'
+    }}>
       {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: screens.xs ? "column" : "row",
-          justifyContent: "space-between",
-          marginBottom: "16px",
-          gap: screens.xs ? "12px" : "8px",
-        }}
-      >
-        <h2 style={{ margin: screens.xs ? "0 0 8px 0" : "0" }}>People List</h2>
-        <div
-          style={{
-            display: "flex",
-            gap: "8px",
-            flexDirection: screens.xs ? "column" : "row",
-          }}
-        >
-          <Input
-            placeholder="Search people..."
-            allowClear
-            prefix={<SearchOutlined />}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ width: screens.xs ? "100%" : "200px" }}
-          />
-          <Button
-            icon={<ReloadOutlined />}
-            onClick={() => window.location.reload()}
-          />
-          <Button
-            type="primary"
-            onClick={() => setIsModalOpen(true)}
-            style={{ width: screens.xs ? "100%" : "auto" }}
-          >
-            + Add Person
-          </Button>
+      <div className="people-header" style={{
+        display: 'flex',
+        flexDirection: screens.xs ? 'column' : 'row',
+        justifyContent: 'space-between',
+        alignItems: screens.xs ? 'flex-start' : 'center',
+        marginBottom: '24px',
+        gap: screens.xs ? '16px' : '24px'
+      }}>
+        <h2 className="people-title" style={{ 
+          margin: 0,
+          fontSize: screens.xs ? '1.5rem' : '1.8rem',
+          color: darkMode ? "#f1f1f1" : "inherit",
+          textAlign: screens.xs ? 'center' : 'left',
+          width: screens.xs ? '100%' : 'auto'
+        }}>People List</h2>
+        <div className="people-actions" style={{
+          display: 'flex',
+          flexDirection: screens.xs ? 'column' : 'row',
+          gap: '12px',
+          width: screens.xs ? '100%' : 'auto'
+        }}>
+          <div style={{
+            display: 'flex',
+            flexDirection: screens.xs ? 'row' : 'row',
+            gap: '8px',
+            width: screens.xs ? '100%' : 'auto',
+            alignItems: screens.xs ? 'center' : 'stretch'
+          }}>
+            <Input
+              placeholder="Search people..."
+              allowClear
+              prefix={<SearchOutlined />}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className={darkMode ? "dark-input" : ""}
+              style={{ 
+                flex: screens.xs ? '1' : 'none',
+                width: screens.xs ? '100%' : '250px',
+                backgroundColor: darkMode ? "#2d2d2d" : "#fff",
+                color: darkMode ? "#f1f1f1" : "inherit",
+                borderColor: darkMode ? "#555" : "#d9d9d9"
+              }}
+            />
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={() => window.location.reload()}
+              className={darkMode ? "dark-button" : ""}
+              style={screens.xs ? { flex: '0 0 auto' } : {}}
+            />
+          </div>
+          <div style={{ 
+            display: 'flex', 
+            gap: '12px',
+            flexDirection: screens.xs ? 'row' : 'row',
+            width: screens.xs ? '100%' : 'auto',
+            flexWrap: screens.xs ? 'wrap' : 'nowrap'
+          }}>
+            <Button 
+              type="primary" 
+              onClick={() => setIsModalOpen(true)}
+              style={{
+                flex: screens.xs ? '1 1 45%' : 'none',
+                padding: '0 24px',
+                backgroundColor: darkMode ? "#177ddc" : "#1890ff",
+                borderColor: darkMode ? "#177ddc" : "#1890ff"
+              }}
+            >
+              + Add Person
+            </Button>
+            {selectedRowKeys.length > 0 && (
+              <Popconfirm
+                title={`Delete ${selectedRowKeys.length} selected person(s)?`}
+                onConfirm={handleDeleteSelected}
+                okText="Yes"
+                cancelText="No"
+                className={darkMode ? "dark-popconfirm" : ""}
+              >
+                <Button 
+                  danger
+                  icon={<DeleteOutlined />}
+                  style={{
+                    flex: screens.xs ? '1 1 45%' : 'none',
+                    padding: '0 24px',
+                    backgroundColor: darkMode ? "#d9363e" : "#ff4d4f",
+                    borderColor: darkMode ? "#d9363e" : "#ff4d4f"
+                  }}
+                >
+                  Delete Selected
+                </Button>
+              </Popconfirm>
+            )}
+            <Popconfirm
+              title={`Delete all ${people.length} people?`}
+              onConfirm={handleDeleteAllPeoples}
+              okText="Yes"
+              cancelText="No"
+              className={darkMode ? "dark-popconfirm" : ""}
+            >
+              <Button 
+                danger
+                icon={<DeleteOutlined />}
+                style={{
+                  flex: screens.xs ? '1 1 45%' : 'none',
+                  padding: '0 24px',
+                  backgroundColor: darkMode ? "#d9363e" : "#ff4d4f",
+                  borderColor: darkMode ? "#d9363e" : "#ff4d4f"
+                }}
+              >
+                Delete All
+              </Button>
+            </Popconfirm>
+          </div>
         </div>
       </div>
 
       {/* Table */}
-      <Table
-        columns={getColumns()}
-        dataSource={filteredPeople}
-        rowKey="id"
-        size={screens.xs ? "small" : "middle"}
-        scroll={screens.xs ? { x: true } : undefined}
-        style={{
-          background: "white",
-          borderRadius: "8px",
-          padding: screens.xs ? "8px" : "12px",
-        }}
-        locale={{ emptyText: "No people found" }}
-      />
+      <div className="people-table-container" style={{
+        overflowX: 'auto',
+        borderRadius: '8px',
+        boxShadow: darkMode ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.1)',
+        marginRight: screens.xs ? '0' : '20px'
+      }}>
+        <Table
+          columns={getColumns()}
+          dataSource={filteredPeople}
+          rowKey="id"
+          scroll={{ x: true }}
+          pagination={{
+            pageSize: screens.xs ? 5 : 10,
+            showSizeChanger: false,
+          }}
+          className={darkMode ? "dark-table" : ""}
+          style={{ 
+            backgroundColor: darkMode ? "#1f1f1f" : "#fff",
+            color: darkMode ? "#f1f1f1" : "inherit"
+          }}
+          rowSelection={screens.xs ? undefined : rowSelection}
+          onRow={(record) => ({
+            style: { 
+              backgroundColor: selectedRowKeys.includes(record.id) 
+                ? (darkMode ? "#2a2a2a" : "#fafafa") 
+                : (darkMode ? "#1f1f1f" : "#fff")
+            },
+          })}
+        />
+      </div>
 
       {/* AI Command Box */}
-      <div style={{ 
-        marginTop: 24,
-        padding: screens.xs ? 8 : 16,
-        background: "white",
-        borderRadius: 8
+      <div className="ai-command-container" style={{ 
+        marginTop: '24px',
+        padding: screens.xs ? '8px' : '16px',
+        backgroundColor: darkMode ? "#1f1f1f" : "#fff",
+        borderRadius: '8px',
+        boxShadow: darkMode ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.1)',
+        color: darkMode ? "#f1f1f1" : "inherit"
       }}>
-        <h3 style={{ marginBottom: 16 }}>AI Command Input</h3>
+        <h3 style={{ 
+          marginBottom: '16px',
+          color: darkMode ? "#f1f1f1" : "inherit",
+          textAlign: screens.xs ? 'center' : 'left'
+        }}>AI Command Input</h3>
         <Space.Compact style={{ width: '100%' }}>
           <Input
             value={aiCommand}
             onChange={(e) => setAiCommand(e.target.value)}
             placeholder="e.g. name is John, company is XYZ, country is US, phone is 123456, email is j@j.com, submit"
+            className={darkMode ? "dark-input" : ""}
+            style={{
+              backgroundColor: darkMode ? "#2d2d2d" : "#fff",
+              color: darkMode ? "#f1f1f1" : "inherit",
+              borderColor: darkMode ? "#555" : "#d9d9d9"
+            }}
           />
-          <Button type="primary" onClick={handleAICommand}>Execute</Button>
+          <Button 
+            type="primary" 
+            onClick={handleAICommand}
+            style={{
+              backgroundColor: darkMode ? "#177ddc" : "#1890ff",
+              borderColor: darkMode ? "#177ddc" : "#1890ff"
+            }}
+          >
+            Execute
+          </Button>
           <Button 
             icon={<AudioOutlined />} 
             onClick={startVoiceRecognition}
             type={listening ? "primary" : "default"}
+            style={{
+              backgroundColor: listening ? (darkMode ? "#177ddc" : "#1890ff") : (darkMode ? "#2d2d2d" : "#fff"),
+              borderColor: listening ? (darkMode ? "#177ddc" : "#1890ff") : (darkMode ? "#555" : "#d9d9d9"),
+              color: listening ? "#fff" : (darkMode ? "#f1f1f1" : "inherit")
+            }}
           >
             {listening ? "Listening..." : "Voice"}
           </Button>
         </Space.Compact>
         {aiResponse && (
           <div style={{ 
-            marginTop: 16,
-            padding: 8,
-            background: '#f0f0f0',
-            borderRadius: 4
+            marginTop: '16px',
+            padding: '8px',
+            background: darkMode ? '#2d2d2d' : '#f0f0f0',
+            borderRadius: '4px',
+            color: darkMode ? "#f1f1f1" : "inherit",
+            textAlign: 'center'
           }}>
             {aiResponse}
           </div>
@@ -357,34 +605,202 @@ const Peoples = () => {
         onCancel={() => {
           setIsModalOpen(false);
           setEditId(null);
+          setFormData({ name: "", company: "", country: "", phone: "", email: "" });
         }}
         onOk={handleSubmit}
         okText={editId ? "Update" : "Submit"}
         cancelText="Cancel"
-        width={screens.xs ? "90%" : 700}
+        width={screens.xs ? "90%" : "700px"}
+        className={darkMode ? "dark-modal" : ""}
         style={{ top: screens.xs ? "16px" : "50px" }}
+        bodyStyle={{
+          backgroundColor: darkMode ? "#1f1f1f" : "#fff",
+          color: darkMode ? "#f1f1f1" : "inherit"
+        }}
+        headerStyle={{
+          backgroundColor: darkMode ? "#1f1f1f" : "#fff",
+          color: darkMode ? "#f1f1f1" : "inherit",
+          borderBottomColor: darkMode ? "#444" : "#f0f0f0"
+        }}
+        footerStyle={{
+          borderTopColor: darkMode ? "#444" : "#f0f0f0"
+        }}
       >
-        <div className="row g-3">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {[
-            { label: "Name", name: "name" },
+            { label: "Name", name: "name", required: true },
             { label: "Company", name: "company" },
             { label: "Country", name: "country" },
             { label: "Phone", name: "phone" },
             { label: "Email", name: "email" }
-          ].map(({ label, name }) => (
-            <div className="col-12" key={name}>
-              <label className="form-label">{label}</label>
+          ].map(({ label, name, required = false }) => (
+            <div key={name}>
+              <label style={{ 
+                color: darkMode ? "#f1f1f1" : "inherit", 
+                display: 'block', 
+                marginBottom: '8px' 
+              }}>
+                {label} {required && <span style={{ color: 'red' }}>*</span>}
+              </label>
               <Input
                 name={name}
                 placeholder={`Enter ${label}`}
                 value={formData[name]}
                 onChange={handleChange}
-                required={name === "name"}
+                required={required}
+                className={darkMode ? "dark-input" : ""}
+                style={{
+                  backgroundColor: darkMode ? "#2d2d2d" : "#fff",
+                  color: darkMode ? "#f1f1f1" : "inherit",
+                  borderColor: darkMode ? "#555" : "#d9d9d9"
+                }}
               />
             </div>
           ))}
         </div>
       </Modal>
+
+      <style>{`
+        .dark-mode {
+          background-color: #141414;
+          color: #f1f1f1;
+        }
+        
+        .dark-input {
+          background-color: #2d2d2d !important;
+          color: #f1f1f1 !important;
+          border-color: #555 !important;
+        }
+        
+        .dark-input::placeholder {
+          color: #8c8c8c !important;
+        }
+        
+        .dark-input:hover, .dark-input:focus {
+          border-color: #177ddc !important;
+        }
+        
+        .dark-table .ant-table {
+          background-color: #1f1f1f !important;
+          color: #f1f1f1 !important;
+        }
+        
+        .dark-table .ant-table-thead > tr > th {
+          background-color: #1d1d1d !important;
+          color: #f1f1f1 !important;
+          border-bottom-color: #444 !important;
+        }
+        
+        .dark-table .ant-table-tbody > tr > td {
+          background-color: #1f1f1f !important;
+          color: #f1f1f1 !important;
+          border-bottom-color: #444 !important;
+        }
+        
+        .dark-table .ant-table-tbody > tr:hover > td {
+          background-color: #2a2a2a !important;
+        }
+        
+        .dark-modal .ant-modal-content {
+          background-color: #1f1f1f !important;
+          color: #f1f1f1 !important;
+          border: 1px solid #444 !important;
+        }
+        
+        .dark-modal .ant-modal-title {
+          color: #f1f1f1 !important;
+        }
+        
+        .dark-modal .ant-modal-close {
+          color: #f1f1f1 !important;
+        }
+        
+        .dark-modal .ant-modal-close:hover {
+          color: #177ddc !important;
+        }
+        
+        .dark-popconfirm .ant-popover-inner {
+          background-color: #2d2d2d !important;
+          color: #f1f1f1 !important;
+          border: 1px solid #555 !important;
+        }
+        
+        .dark-popconfirm .ant-popover-title {
+          color: #f1f1f1 !important;
+          border-bottom-color: #555 !important;
+        }
+        
+        .dark-popconfirm .ant-popover-message {
+          color: #f1f1f1 !important;
+        }
+        
+        .dark-button {
+          background-color: #2d2d2d !important;
+          color: #f1f1f1 !important;
+          border-color: #555 !important;
+        }
+        
+        .dark-button:hover {
+          color: #177ddc !important;
+          border-color: #177ddc !important;
+        }
+        
+        .delete-button {
+          background-color: #ff4d4f !important;
+          border-color: #ff4d4f !important;
+          color: white !important;
+        }
+        
+        .delete-button:hover, .delete-button:focus {
+          background-color: #d9363e !important;
+          border-color: #d9363e !important;
+          color: white !important;
+        }
+        
+        .dark-mobile-card {
+          background-color: #1f1f1f !important;
+          border-color: #444 !important;
+        }
+        
+        .mobile-person-card {
+          padding: 8px;
+          border-radius: 4px;
+          margin: 4px 0;
+        }
+        
+        @media (max-width: 576px) {
+          .people-container {
+            padding: 16px !important;
+            margin-left: 0 !important;
+          }
+          
+          .people-header {
+            align-items: center !important;
+          }
+          
+          .people-title {
+            text-align: center !important;
+            width: 100% !important;
+          }
+          
+          .people-actions {
+            width: 100% !important;
+          }
+          
+          .ai-command-container h3 {
+            text-align: center !important;
+          }
+          
+          .ai-command-container .ant-space-compact {
+            flex-direction: column;
+          }
+          
+          .ai-command-container .ant-space-compact > * {
+            width: 100% !important;
+            margin-bottom: 8px;
+          }
+        }
+      `}</style>
     </div>
   );
 };

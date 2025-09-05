@@ -1,442 +1,288 @@
-import React, { useState, useEffect, useRef } from "react";
-import {
-  FaRobot, FaPaperPlane, FaSpinner, 
-  FaMicrophone, FaMicrophoneSlash,
-  FaUser, FaUserTie, FaMoneyBillWave, FaChartLine
-} from "react-icons/fa";
-import { ref, push } from "firebase/database";
-import { db } from "./firebase";
-import { useDarkMode } from "./DarkModeContext";
-import "./Chatbox.css";
+import React, { useState, useRef, useEffect } from 'react';
+import './Chatbox.css';
 
-const COMPONENTS = {
-  people: {
-    name: "People",
-    icon: <FaUser />,
-    fields: ["name", "company", "country", "phone", "email"],
-    fieldLabels: {
-      name: "Full Name",
-      company: "Company",
-      country: "Country",
-      phone: "Phone Number",
-      email: "Email Address"
-    }
-  },
-  leads: {
-    name: "Leads",
-    icon: <FaChartLine />,
-    fields: ["name", "email", "branch", "type", "phone"],
-    fieldLabels: {
-      name: "Full Name",
-      email: "Email Address",
-      branch: "Branch Location",
-      type: "Lead Type (hot/warm/cold)",
-      phone: "Phone Number"
-    }
-  },
-  customers: {
-    name: "Clients",
-    icon: <FaUserTie />,
-    fields: ["name", "email", "phone", "address", "company"],
-    fieldLabels: {
-      name: "Client Name",
-      email: "Email Address",
-      phone: "Phone Number",
-      address: "Physical Address",
-      company: "Company Name"
-    }
-  },
-  payments: {
-    name: "Payments",
-    icon: <FaMoneyBillWave />,
-    fields: ["number", "client", "amount", "date", "year", "payment_mode"],
-    fieldLabels: {
-      number: "Invoice Number",
-      client: "Client Name",
-      amount: "Amount",
-      date: "Date (YYYY-MM-DD)",
-      year: "Year",
-      payment_mode: "Payment Method (cash/creditcard/banktransfer)"
-    }
+// BACKEND URL
+const API_BASE_URL = 'https://gptbot-api.onrender.com';
+
+// fetch with AbortController timeout
+async function fetchWithTimeout(resource, options = {}) {
+  const { timeout = 6000 } = options;
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  try {
+    const response = await fetch(resource, { ...options, signal: controller.signal });
+    clearTimeout(id);
+    return response;
+  } catch (err) {
+    clearTimeout(id);
+    throw err;
   }
-};
+}
 
-const Chatbox = ({ onAddRecord }) => {
-  const { darkMode } = useDarkMode();
-  const [messages, setMessages] = useState([
-    {
-      sender: "bot",
-      text: "Hello! I'm your assistant. What would you like to work with today?",
-      type: "greeting"
-    },
-    {
-      sender: "bot",
-      text: "Please choose an option:\n1. People\n2. Leads\n3. Clients\n4. Payments",
-      type: "component-selection"
-    }
-  ]);
-  
-  // Core state
-  const [input, setInput] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [currentComponent, setCurrentComponent] = useState(null);
-  const [interactionMode, setInteractionMode] = useState(null);
-  const [collectedData, setCollectedData] = useState({});
-  
-  // Refs
-  const recognitionRef = useRef(null);
-  const messagesEndRef = useRef(null);
+const Chatbox = () => {
+  const [messages, setMessages] = useState(() =>
+    JSON.parse(localStorage.getItem('chatbot_messages') || '[]')
+  );
+  const [inputMessage, setInputMessage]   = useState('');
+  const [connectionStatus, setStatus]     = useState('checking'); // checking | connected | disconnected
+  const [isOpen, setIsOpen]               = useState(false); // Start closed by default
+  const [isLoading, setIsLoading]         = useState(false);
+  const [error, setError]                 = useState(null);
+  const messagesEndRef                    = useRef(null);
+  const textareaRef                       = useRef(null);
 
-  // Initialize empty data structure when component changes
+  // ── ONE-TIME health check ────────────────────────────────
   useEffect(() => {
-    if (currentComponent) {
-      const initialData = {};
-      COMPONENTS[currentComponent].fields.forEach(field => {
-        initialData[field] = "";
+    (async () => {
+      try {
+        const r = await fetchWithTimeout(`${API_BASE_URL}/`, {
+          method: 'GET',
+          headers: { Accept: 'application/json' },
+          timeout: 6000,
+        });
+        if (r.ok) {
+          const data = await r.json();
+          if (data.status === 'GPTBot API is running') {
+            setStatus('connected');     // SUCCESS
+            setError(null);
+            return;
+          }
+        }
+        throw new Error('Unexpected health response');
+      } catch (err) {
+        setStatus('disconnected');      // FAIL → manual connect
+        setError(
+          err.name === 'AbortError'
+            ? 'Initial connection timed out.'
+            : `Initial connection failed: ${err.message}`
+        );
+      }
+    })();
+  }, []); // empty dependency → runs exactly once
+
+  // save & autoscroll
+  useEffect(() => localStorage.setItem('chatbot_messages', JSON.stringify(messages)), [messages]);
+  useEffect(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), [messages]);
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 150)}px`;
+    }
+  }, [inputMessage]);
+
+  // manual (re)connect
+  const handleManualConnect = async () => {
+    setError(null);
+    setStatus('checking');
+    try {
+      const r = await fetchWithTimeout(`${API_BASE_URL}/`, {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+        timeout: 6000,
       });
-      setCollectedData(initialData);
+      if (r.ok && (await r.json()).status === 'GPTBot API is running') {
+        setStatus('connected');
+        setError(null);
+      } else throw new Error('Health check failed');
+    } catch (err) {
+      setStatus('disconnected');
+      setError(err.name === 'AbortError' ? 'Connection timed out.' : err.message);
     }
-  }, [currentComponent]);
-
-  // Voice recognition setup
-  useEffect(() => {
-    const initVoiceRecognition = async () => {
-      if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        recognitionRef.current = new SpeechRecognition();
-        recognitionRef.current.continuous = false;
-        recognitionRef.current.interimResults = false;
-        recognitionRef.current.lang = 'en-US';
-
-        recognitionRef.current.onresult = (event) => {
-          const transcript = event.results[0][0].transcript;
-          setInput(transcript);
-          handleSend(transcript);
-        };
-
-        recognitionRef.current.onerror = (event) => {
-          addBotMessage("Sorry, I couldn't understand that. Please try again.", "error");
-          setIsListening(false);
-        };
-
-        recognitionRef.current.onend = () => {
-          setIsListening(false);
-        };
-      }
-    };
-    initVoiceRecognition();
-  }, []);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+  // send chat
+  const sendMessage = async () => {
+    if (!inputMessage.trim() || isLoading || connectionStatus !== 'connected') return;
 
-  const handleSend = async (text = input) => {
-    const userInput = text.trim();
-    if (!userInput) return;
+    const userMsg = { text: inputMessage, sender: 'user', timestamp: new Date().toISOString() };
+    setMessages(prev => [...prev, userMsg]);
 
-    setMessages(prev => [...prev, { sender: "user", text: userInput }]);
-    setInput("");
-    setIsTyping(true);
-
+    const payload = { client_id: 'clienta', message: inputMessage };
+    setInputMessage('');
+    setIsLoading(true);
     try {
-      if (!currentComponent) {
-        await handleComponentSelection(userInput);
-      } else if (!interactionMode) {
-        await handleModeSelection(userInput);
-      } else {
-        await processInput(userInput);
-      }
-    } catch (error) {
-      addBotMessage(`❌ ${error.message}`, "error");
-    }
-
-    setIsTyping(false);
-  };
-
-  const handleComponentSelection = (input) => {
-    const selection = input.toLowerCase();
-    let selectedComponent = null;
-
-    if (selection.includes('1') || selection.includes('people')) {
-      selectedComponent = 'people';
-    } else if (selection.includes('2') || selection.includes('leads')) {
-      selectedComponent = 'leads';
-    } else if (selection.includes('3') || selection.includes('clients') || selection.includes('customers')) {
-      selectedComponent = 'customers';
-    } else if (selection.includes('4') || selection.includes('payments')) {
-      selectedComponent = 'payments';
-    }
-
-    if (selectedComponent) {
-      setCurrentComponent(selectedComponent);
-      addBotMessage(`You selected: ${COMPONENTS[selectedComponent].name}. How would you like to add records?`);
-      addBotMessage("Choose mode:\n1. Command (single line)\n2. Voice");
-    } else {
-      addBotMessage("Please select a valid option (1-4)");
+      const r = await fetchWithTimeout(`${API_BASE_URL}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        timeout: 15000,
+      });
+      if (!r.ok) throw new Error(await r.text());
+      const data = await r.json();
+      const botReply =
+        data.response || data.error || 'No response from server. Please try again.';
+      setMessages(prev => [...prev, { text: botReply, sender: 'bot', timestamp: new Date().toISOString() }]);
+      setStatus('connected');
+    } catch (err) {
+      const msg =
+        err.name === 'AbortError'
+          ? 'Message timed out (server may be waking up).'
+          : err.message;
+      setMessages(prev => [...prev, { text: `❌ Error: ${msg}`, sender: 'bot', timestamp: new Date().toISOString(), isError: true }]);
+      setError(msg);
+      setStatus('disconnected');   // require manual reconnect next time
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleModeSelection = (input) => {
-    const selection = input.toLowerCase();
-    
-    if (selection.includes('1') || selection.includes('command')) {
-      setInteractionMode('command');
-      showCommandFormat();
-    } else if (selection.includes('2') || selection.includes('voice')) {
-      setInteractionMode('voice');
-      addBotMessage("Voice mode selected. Click the microphone button and speak clearly.");
-    } else {
-      addBotMessage("Please select a valid mode (1-2)");
+  const handleKeyPress = e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
     }
   };
 
-  const showCommandFormat = () => {
-    const component = COMPONENTS[currentComponent];
-    let format = '';
-    let example = '';
-    
-    if (currentComponent === 'payments') {
-      format = "Number Client Amount Date Year PaymentMode";
-      example = "Example: INV-101 TechCorp 5000 2023-08-15 2023 banktransfer";
-    } else {
-      format = component.fields.join(' ');
-      if (currentComponent === 'people') {
-        example = "Example: John Doe TechWave USA 5551234567 john@techwave.com";
-      } else if (currentComponent === 'leads') {
-        example = "Example: John jd@example.com Mumbai hot 9876543210";
-      } else if (currentComponent === 'customers') {
-        example = "Example: TechCorp tc@tech.com 9876543210 '123 Business St' techcorp.com";
-      }
-    }
-    
-    addBotMessage(`Enter all fields in this order:\n${format}`);
-    addBotMessage(example);
-  };
-
-  const processInput = async (input) => {
-    if (interactionMode === 'command') {
-      await processCommandInput(input);
-    } else if (interactionMode === 'voice') {
-      await processCommandInput(input);
+  const clearChat = () => {
+    if (window.confirm('Clear chat history?')) {
+      setMessages([]);
+      localStorage.removeItem('chatbot_messages');
     }
   };
 
-  const processCommandInput = async (input) => {
-    const parsed = parseCommandInput(input);
-    if (!parsed) throw new Error("Invalid format. Please check the field order and try again.");
-    
-    // Validate all fields
-    for (const field of COMPONENTS[currentComponent].fields) {
-      validateField(field, parsed[field]);
-    }
-    
-    await saveData(parsed);
-    addBotMessage(`✅ ${COMPONENTS[currentComponent].name} record saved successfully!`);
-    resetAfterSave();
-  };
+  const timeFmt = ts =>
+    ts ? new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
 
-  const parseCommandInput = (input) => {
-    // Handle quoted strings that might contain spaces
-    const parts = input.match(/[^\s"']+|"([^"]*)"|'([^']*)'/g) || [];
-    const cleanedParts = parts.map(part => 
-      part.startsWith('"') && part.endsWith('"') ? part.slice(1, -1) : 
-      part.startsWith("'") && part.endsWith("'") ? part.slice(1, -1) : 
-      part
-    );
-    
-    const fields = COMPONENTS[currentComponent].fields;
-    
-    if (cleanedParts.length < fields.length) return null;
-    
-    const data = {};
-    fields.forEach((field, index) => {
-      data[field] = cleanedParts[index];
-    });
-    
-    return data;
-  };
-
-  const validateField = (field, value) => {
-    if (!value || !value.trim()) throw new Error(`${field} cannot be empty`);
-    
-    if (field === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-      throw new Error("Please enter a valid email address");
-    }
-    
-    if (field === 'phone' && !/^[0-9+() -]{7,}$/.test(value)) {
-      throw new Error("Please enter a valid phone number");
-    }
-    
-    if (field === 'payment_mode' && !['cash', 'creditcard', 'banktransfer'].includes(value.toLowerCase())) {
-      throw new Error("Payment method must be cash, creditcard, or banktransfer");
-    }
-    
-    if (field === 'amount' && isNaN(Number(value))) {
-      throw new Error("Amount must be a number");
-    }
-    
-    if (field === 'date' && !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-      throw new Error("Date must be in YYYY-MM-DD format");
-    }
-  };
-
-  const saveData = async (data) => {
-    try {
-      const dbRef = ref(db, currentComponent);
-      await push(dbRef, data);
-      if (onAddRecord) onAddRecord(currentComponent, data);
-    } catch (error) {
-      console.error("Error saving data:", error);
-      throw new Error("Failed to save. Please try again.");
-    }
-  };
-
-  const resetAfterSave = () => {
-    setCurrentComponent(null);
-    setInteractionMode(null);
-    setCollectedData({});
-    addBotMessage("Would you like to work with another component? (yes/no)");
-  };
-
-  const addBotMessage = (text, type = "bot") => {
-    setMessages(prev => [...prev, { sender: "bot", text, type }]);
-  };
-
-  const toggleVoiceRecognition = () => {
-    if (!recognitionRef.current) {
-      addBotMessage("Voice recognition is not supported in your browser", "error");
-      return;
-    }
-    
-    if (isListening) {
-      recognitionRef.current.stop();
-      setIsListening(false);
-    } else {
-      if (!interactionMode) setInteractionMode('voice');
-      recognitionRef.current.start();
-      setIsListening(true);
-      addBotMessage("Listening... Please speak now", "info");
-    }
-  };
-
-  const handleReset = () => {
-    setCurrentComponent(null);
-    setInteractionMode(null);
-    setCollectedData({});
-    addBotMessage("Session reset. What would you like to work with?");
-    addBotMessage("Please choose an option:\n1. People\n2. Leads\n3. Clients\n4. Payments");
-  };
-
+  // ── UI ───────────────────────────────────────────────────
   return (
-    <div className={`chatbox-container ${darkMode ? "dark" : ""}`}>
-      <div className="chatbox-header">
-        <div className="header-content">
-          <FaRobot className="bot-icon" />
-          <div className="header-text">
-            <h2>Business Assistant</h2>
-            {currentComponent && (
-              <div className="mode-indicator">
-                {COMPONENTS[currentComponent].icon}
-                <span>{COMPONENTS[currentComponent].name}</span>
-                {interactionMode && ` | ${interactionMode.charAt(0).toUpperCase() + interactionMode.slice(1)} Mode`}
-              </div>
-            )}
-          </div>
+    <>
+      {/* Chatbot icon when closed */}
+      {!isOpen && (
+        <div 
+          className="chatbot-icon-closed"
+          onClick={() => setIsOpen(true)}
+          role="button"
+          tabIndex={0}
+          aria-label="Open chatbot"
+        >
+          <div className="chatbot-icon">🤖</div>
+          {connectionStatus === 'connected' && <div className="status-indicator connected" />}
+          {connectionStatus === 'disconnected' && <div className="status-indicator disconnected" />}
+          {connectionStatus === 'checking' && <div className="status-indicator checking" />}
         </div>
-        {isListening && (
-          <div className="listening-indicator">
-            <div className="pulse-animation" />
-            <span>Listening...</span>
-          </div>
-        )}
-      </div>
+      )}
 
-      <div className="chatbox-messages">
-        {messages.map((msg, index) => (
-          <div key={index} className={`message ${msg.sender} ${msg.type || ""}`}>
-            <div className="message-content">
-              {msg.sender === "bot" && <FaRobot className="message-icon" />}
-              {msg.sender === "user" && <div className="user-avatar">U</div>}
-              <div className="message-text">
-                {msg.text.split('\n').map((line, i) => (
-                  <React.Fragment key={i}>
-                    {line}
-                    <br />
-                  </React.Fragment>
-                ))}
-              </div>
+      {/* Main chatbot container */}
+      <div className={`chatbot-container ${isOpen ? 'open' : ''}`}>
+        <div
+          className="chatbot-header"
+          onClick={() => setIsOpen(!isOpen)}
+          role="button"
+          tabIndex={0}
+          aria-label="Toggle chatbot"
+        >
+          <div className="chatbot-title">
+            <div className="chatbot-icon">🤖</div>
+            <h3>Customer Support</h3>
+            <div className={`connection-status ${connectionStatus}`}>
+              <div className="status-indicator" />
+              <span>
+                {connectionStatus === 'connected'
+                  ? '🟢 Online'
+                  : connectionStatus === 'disconnected'
+                  ? '🔴 Offline'
+                  : '🟡 Checking...'}
+              </span>
             </div>
           </div>
-        ))}
-        {isTyping && (
-          <div className="message bot typing">
-            <div className="message-content">
-              <FaRobot className="message-icon" />
-              <div className="message-text">
-                <FaSpinner className="spin" /> Typing...
-              </div>
-            </div>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
 
-      <div className="chatbox-input">
-        <input
-          type="text"
-          placeholder={getInputPlaceholder()}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSend()}
-          disabled={isListening && interactionMode === "voice"}
-        />
-        <div className="input-buttons">
-          <button
-            onClick={toggleVoiceRecognition}
-            className={`mic-btn ${isListening ? "active" : ""}`}
-            title="Voice input"
-            disabled={!currentComponent || isTyping}
-          >
-            {isListening ? <FaMicrophoneSlash /> : <FaMicrophone />}
-          </button>
-          <button
-            onClick={handleSend}
-            className="send-btn"
-            disabled={isTyping || !input.trim()}
-            title="Send message"
-          >
-            {isTyping ? <FaSpinner className="spin" /> : <FaPaperPlane />}
-          </button>
-          {(currentComponent || interactionMode) && (
+          {isOpen && (
             <button
-              onClick={handleReset}
-              className="reset-btn"
-              title="Start over"
+              className="clear-button"
+              onClick={e => {
+                e.stopPropagation();
+                clearChat();
+              }}
+              title="Clear chat"
             >
-              Reset
+              🗑️
             </button>
           )}
         </div>
-      </div>
-    </div>
-  );
 
-  function getInputPlaceholder() {
-    if (!currentComponent) return "Select component (1-4)";
-    if (!interactionMode) return "Select mode (1-2)";
-    
-    if (interactionMode === "command") {
-      return `Enter: ${COMPONENTS[currentComponent].fields.join(' ')}`;
-    }
-    
-    return "Click mic and speak";
-  }
+        {/* manual connect prompt */}
+        {isOpen && connectionStatus === 'disconnected' && (
+          <div className="connection-retry">
+            <button onClick={handleManualConnect}>Connect</button>
+          </div>
+        )}
+
+        {/* chat area */}
+        {isOpen && connectionStatus === 'connected' && (
+          <div className="chatbot-content">
+            <div className="chatbot-messages">
+              {messages.length === 0 ? (
+                <div className="welcome-message">
+                  <div className="welcome-icon">👋</div>
+                  <h3>Hello! I'm your AI assistant</h3>
+                  <p>Powered by FastAPI + OpenAI</p>
+                </div>
+              ) : (
+                messages.map((m, i) => (
+                  <div
+                    key={`${m.timestamp}-${i}`}
+                    className={`message ${m.sender} ${m.isError ? 'error' : ''}`}
+                  >
+                    <div className="message-header">
+                      <span className="sender-label">{m.sender === 'user' ? 'You' : 'Assistant'}</span>
+                      <span className="message-time">{timeFmt(m.timestamp)}</span>
+                    </div>
+                    <div className="message-content">
+                      {m.text.split('\n').map((line, j) => (
+                        <p key={j}>{line}</p>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
+
+              {isLoading && (
+                <div className="message bot">
+                  <div className="message-content loading">
+                    <div className="typing-indicator">
+                      <span />
+                      <span />
+                      <span />
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* input */}
+            <div className="chatbot-input-area">
+              {error && (
+                <div className="error-message">
+                  ⚠️ {error}
+                  <button onClick={handleManualConnect}>Reconnect</button>
+                </div>
+              )}
+              <div className="chatbot-input">
+                <textarea
+                  ref={textareaRef}
+                  value={inputMessage}
+                  onChange={e => setInputMessage(e.target.value)}
+                  onKeyDown={handleKeyPress}
+                  placeholder="Type a message…"
+                  rows={1}
+                  disabled={isLoading || connectionStatus !== 'connected'}
+                />
+                <button
+                  onClick={sendMessage}
+                  disabled={isLoading || !inputMessage.trim() || connectionStatus !== 'connected'}
+                  className={isLoading ? 'loading' : ''}
+                >
+                  {isLoading ? <span className="spinner" /> : '➤'}
+                </button>
+              </div>
+              <div className="input-hint">Enter to send • Shift+Enter for newline</div>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
+  );
 };
 
 export default Chatbox;

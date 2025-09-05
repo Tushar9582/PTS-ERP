@@ -7,7 +7,7 @@ const firebaseConfig = {
   authDomain: "erpsystem-a6d82.firebaseapp.com",
   databaseURL: "https://erpsystem-a6d82-default-rtdb.firebaseio.com",
   projectId: "erpsystem-a6d82",
-  storageBucket: "erpsystem-a6d82.appspot.com",
+  storageBucket: "erpsystem-a6d82.firebasestorage.app",
   messagingSenderId: "349551206344",
   appId: "1:349551206344:web:fc178240ed4e6776622afd",
   measurementId: "G-0QDTM802BV"

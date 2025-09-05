@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: vite-project
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm run preview -- --port $PORT --host
+    envVars:
+      - key: NODE_VERSION
+        value: 18
+      - key: NPM_VERSION
+        value: 9
+    autoDeploy: true

@@ -1,27 +1,34 @@
-import React, { useState, useEffect, useContext } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { 
-  FaBars, FaTachometerAlt, FaFileInvoiceDollar, FaMoneyBillWave, 
-  FaClipboardList, FaBuilding, FaTags, FaBox, FaChartPie, FaCog,FaComments,
-  FaMoon, FaSun
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { useContext, useEffect, useState } from "react";
+import {
+  FaBars,
+  FaBox,
+  FaBuilding,
+  FaChartPie,
+  FaChevronLeft, FaChevronRight,
+  FaClipboardList,
+  FaCog, FaComments,
+  FaFileInvoiceDollar, FaMoneyBillWave,
+  FaTachometerAlt,
+  FaTags
 } from "react-icons/fa";
+import { Link, useLocation } from "react-router-dom";
+import darkToggleAnim from "./assets/animations/dark-toggle.lottie";
+import logo from './assets/erp_logo.png';
 import { DarkModeContext } from "./DarkModeContext";
 import "./navbar.css";
-import darkToggleAnim from "./assets/animations/dark-toggle.lottie";
-import { DotLottieReact } from "@lottiefiles/dotlottie-react";
-import logo from './assets/erp_logo.png'; // Adjust path if needed
 
 const Navbar = () => {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const { darkMode, toggleDarkMode } = useContext(DarkModeContext);
+  const [collapsed, setCollapsed] = useState(false);
 
-  // Handle window resize
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth <= 768);
-      // Close sidebar when resizing to desktop if open
       if (window.innerWidth > 768 && sidebarOpen) {
         setSidebarOpen(false);
       }
@@ -31,191 +38,288 @@ const Navbar = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, [sidebarOpen]);
 
-  // Close sidebar when clicking on a nav link (mobile only)
   const handleNavLinkClick = () => {
     if (isMobile) {
       setSidebarOpen(false);
     }
   };
 
+  const toggleSidebar = () => {
+    if (isMobile) {
+      setSidebarOpen(!sidebarOpen);
+    } else {
+      setCollapsed(!collapsed);
+    }
+  };
+
+  const sidebarVariants = {
+    open: { x: 0 },
+    closed: { x: '-100%' }
+  };
+
+  const overlayVariants = {
+    open: { opacity: 1, pointerEvents: 'auto' },
+    closed: { opacity: 0, pointerEvents: 'none' }
+  };
+
   return (
     <>
-      {/* Overlay for mobile */}
-      {sidebarOpen && isMobile && (
-        <div 
-          className="overlay" 
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+      {/* Animated Overlay for mobile */}
+      <AnimatePresence>
+        {sidebarOpen && isMobile && (
+          <motion.div 
+            className="overlay"
+            initial="closed"
+            animate="open"
+            exit="closed"
+            variants={overlayVariants}
+            transition={{ duration: 0.3 }}
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Hamburger Menu for Mobile */}
       {isMobile && (
         <div 
-          className="hamburger" 
-          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className={`hamburger ${darkMode ? 'dark' : ''}`}
+          onClick={toggleSidebar}
         >
           <FaBars />
         </div>
       )}
 
-      {/* Sidebar */}
-         <div className={`sidebar ${sidebarOpen ? "open" : ""} ${darkMode ? "dark-mode" : ""}`}>
-         <div className="sidebar-header">
-  <img src={logo} alt="ERP by PTS Logo" className="logo-img" />
-  
-  <div 
-    className="nav-item" 
-    onClick={toggleDarkMode} 
-    style={{ cursor: "pointer", width: 60 }}
-  >
-    <DotLottieReact
-      src={darkToggleAnim}
-      loop={true}
-      autoplay
-    />
-  </div>
-</div>
-
-
-
+      {/* Animated Sidebar */}
+      <motion.div 
+        className={`sidebar ${darkMode ? "dark-mode" : ""} ${collapsed ? "collapsed" : ""}`}
+        initial={isMobile ? "closed" : "open"}
+        animate={sidebarOpen || !isMobile ? "open" : "closed"}
+        variants={sidebarVariants}
+        transition={{ type: 'tween', duration: 0.3 }}
+      >
+        <div className="sidebar-header">
+          {!collapsed && <img src={logo} alt="ERP Logo" className="logo-img" />}
+          <div 
+            className="nav-item" 
+            onClick={toggleDarkMode} 
+            style={{ cursor: "pointer", width: collapsed ? 40 : 60 }}
+          >
+            <DotLottieReact
+              src={darkToggleAnim}
+              loop={true}
+              autoplay
+            />
+          </div>
+        </div>
 
         <ul className="nav-links">
-          <li className={location.pathname === "/" ? "active" : ""}>
+          <motion.li 
+            className={location.pathname === "/" ? "active" : ""}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
             <Link 
               to="/" 
               className="nav-item"
               onClick={handleNavLinkClick}
             >
-              <FaTachometerAlt size={18} /> Dashboard
+              <FaTachometerAlt size={18} /> 
+              {!collapsed && <span>Dashboard</span>}
             </Link>
-          </li>
-          <li className={location.pathname === "/leads" ? "active" : ""}>
+          </motion.li>
+
+          <motion.li 
+            className={location.pathname === "/leads" ? "active" : ""}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
             <Link 
               to="/leads" 
               className="nav-item"
               onClick={handleNavLinkClick}
             >
-             <FaClipboardList size={18} /> Leads
+              <FaClipboardList size={18} /> 
+              {!collapsed && <span>Leads</span>}
             </Link>
-          </li>
+          </motion.li>
 
-
-          <li className={location.pathname === "/chatbox" ? "active" : ""}>
-  <Link 
-    to="/chatbox" 
-    className="nav-item"
-    onClick={handleNavLinkClick}
-  >
-   <FaComments size={18} />ChatBox
-  </Link>
-</li>
-
-
-
-
-          <li className={location.pathname === "/customform" ? "active" : ""}>
+          
+          <motion.li 
+            className={location.pathname === "/customform" ? "active" : ""}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
             <Link 
               to="/customform" 
               className="nav-item"
               onClick={handleNavLinkClick}
             >
-              <FaCog size={18} /> Custom Leads 
+              <FaCog size={18} /> 
+              {!collapsed && <span>Custom Leads</span>}
             </Link>
-          </li>
-          <li className={location.pathname === "/invoices" ? "active" : ""}>
+          </motion.li>
+
+          <motion.li 
+            className={location.pathname === "/invoices" ? "active" : ""}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
             <Link 
               to="/invoices" 
               className="nav-item"
               onClick={handleNavLinkClick}
             >
-              <FaFileInvoiceDollar size={18} /> Invoices
+              <FaFileInvoiceDollar size={18} /> 
+              {!collapsed && <span>Invoices</span>}
             </Link>
-          </li>
-          <li className={location.pathname === "/customers" ? "active" : ""}>
+          </motion.li>
+
+          <motion.li 
+            className={location.pathname === "/customers" ? "active" : ""}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
             <Link 
               to="/customers" 
               className="nav-item"
               onClick={handleNavLinkClick}
             >
-              <FaCog size={18} />Clients 
+              <FaCog size={18} /> 
+              {!collapsed && <span>Clients</span>}
             </Link>
-          </li>
-          <li className={location.pathname === "/peoples" ? "active" : ""}>
+          </motion.li>
+
+          <motion.li 
+            className={location.pathname === "/peoples" ? "active" : ""}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
             <Link 
               to="/peoples" 
               className="nav-item"
               onClick={handleNavLinkClick}
             >
-              <FaCog size={18} />Peoples 
+              <FaCog size={18} /> 
+              {!collapsed && <span>Peoples</span>}
             </Link>
-          </li>
-          <li className={location.pathname === "/payments" ? "active" : ""}>
+          </motion.li>
+
+          <motion.li 
+            className={location.pathname === "/payments" ? "active" : ""}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
             <Link 
               to="/payments" 
               className="nav-item"
               onClick={handleNavLinkClick}
             >
-              <FaMoneyBillWave size={18} /> Payments
+              <FaMoneyBillWave size={18} /> 
+              {!collapsed && <span>Payments</span>}
             </Link>
-          </li>
-            <li className={location.pathname === "/orders" ? "active" : ""}>
+          </motion.li>
+
+          {/* <motion.li 
+            className={location.pathname === "/orders" ? "active" : ""}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
             <Link 
               to="/orders" 
               className="nav-item"
               onClick={handleNavLinkClick}
             >
-              <FaMoneyBillWave size={18} /> Orders
+              <FaMoneyBillWave size={18} /> 
+              {!collapsed && <span>Orders</span>}
             </Link>
-          </li>
-          <li className={location.pathname === "/companies" ? "active" : ""}>
+          </motion.li> */}
+
+          <motion.li 
+            className={location.pathname === "/companies" ? "active" : ""}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
             <Link 
               to="/companies" 
               className="nav-item"
               onClick={handleNavLinkClick}
             >
-              <FaBuilding size={18} /> Companies
+              <FaBuilding size={18} /> 
+              {!collapsed && <span>Companies</span>}
             </Link>
-          </li>
-          <li className={location.pathname === "/products" ? "active" : ""}>
+          </motion.li>
+
+          <motion.li 
+            className={location.pathname === "/products" ? "active" : ""}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
             <Link 
               to="/products" 
               className="nav-item"
               onClick={handleNavLinkClick}
             >
-              <FaBox size={18} /> Products
+              <FaBox size={18} /> 
+              {!collapsed && <span>Products</span>}
             </Link>
-          </li>
-          <li className={location.pathname === "/products-category" ? "active" : ""}>
+          </motion.li>
+
+          <motion.li 
+            className={location.pathname === "/products-category" ? "active" : ""}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
             <Link 
               to="/products-category" 
               className="nav-item"
               onClick={handleNavLinkClick}
             >
-              <FaTags size={18} /> Products Category
+              <FaTags size={18} /> 
+              {!collapsed && <span>Products Category</span>}
             </Link>
-          </li>
-          <li className={location.pathname === "/report" ? "active" : ""}>
+          </motion.li>
+
+          <motion.li 
+            className={location.pathname === "/report" ? "active" : ""}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
             <Link 
               to="/reports" 
               className="nav-item"
               onClick={handleNavLinkClick}
             >
-              <FaChartPie size={18} /> Report
+              <FaChartPie size={18} /> 
+              {!collapsed && <span>Report</span>}
             </Link>
-          </li>
-          <li className={location.pathname === "/settings" ? "active" : ""}>
+          </motion.li>
+
+          <motion.li 
+            className={location.pathname === "/settings" ? "active" : ""}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
             <Link 
               to="/settings" 
               className="nav-item"
               onClick={handleNavLinkClick}
             >
-              <FaCog size={18} /> Settings
+              <FaCog size={18} /> 
+              {!collapsed && <span>Settings</span>}
             </Link>
-          </li>
-          
-        
+          </motion.li>
         </ul>
-      </div>
+
+        {/* Collapse/Expand Button */}
+        {!isMobile && (
+          <div 
+            className={`toggle-sidebar ${darkMode ? 'dark' : ''}`}
+            onClick={toggleSidebar}
+          >
+            {collapsed ? <FaChevronRight /> : <FaChevronLeft />}
+          </div>
+        )}
+      </motion.div>
     </>
   );
 };
